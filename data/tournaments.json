@@ -1085,10 +1085,20 @@
       "teams": [],
       "matches": [],
       "selectedMatchId": null,
-      "playerPool": [],
+      "playerPool": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ],
       "courts": 2,
       "format": "league"
     }
   ],
-  "savedAt": "2026-07-03T19:05:31.449Z"
+  "savedAt": "2026-07-03T19:08:42.398Z"
 }
