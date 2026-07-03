@@ -1268,8 +1268,8 @@
           "teamAId": 5,
           "teamBId": 4,
           "scoreA": 0,
-          "scoreB": 4,
-          "winnerId": null,
+          "scoreB": 21,
+          "winnerId": 4,
           "servingTeamId": 4,
           "round": 7,
           "court": 1,
@@ -1284,5 +1284,5 @@
       "format": "league"
     }
   ],
-  "savedAt": "2026-07-03T19:20:08.908Z"
+  "savedAt": "2026-07-03T19:20:16.272Z"
 }
