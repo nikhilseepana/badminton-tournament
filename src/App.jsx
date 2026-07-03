@@ -33,7 +33,6 @@ const TABS = [
   { key: "fixtures", label: "Draw", icon: "📋" },
   { key: "match", label: "Score", icon: "🏸" },
   { key: "standings", label: "Table", icon: "📊" },
-  { key: "settings", label: "Settings", icon: "⚙️" },
 ];
 
 function ShuttleIcon({ size = 16 }) {
@@ -783,7 +782,11 @@ function App() {
                 <Title level={4} style={{ margin: 0 }}>
                   Tournaments
                 </Title>
-                <Tag>{tournaments.length} total</Tag>
+                <Flex gap={4} align="center">
+                  <Button size="small" loading={syncing} disabled={syncing} onClick={handlePullFromGitHub} title="Pull from GitHub">⬇</Button>
+                  <Button size="small" type="primary" loading={syncing} disabled={syncing} onClick={handlePushToGitHub} title="Push to GitHub">⬆</Button>
+                  {syncStatus && <Text style={{ fontSize: 11, color: syncStatus.startsWith('✅') ? '#16a34a' : syncStatus.startsWith('⏳') ? '#2563eb' : '#dc2626' }}>{syncStatus}</Text>}
+                </Flex>
               </Flex>
               <form
                 onSubmit={handleCreateTournament}
@@ -829,48 +832,6 @@ function App() {
                   </div>
                 ))}
               </Space>
-            </Card>
-          )}
-
-          {/* Settings page */}
-          {activeTab === 'settings' && (
-            <Card styles={{ body: { padding: '14px 16px' } }} style={{ border: '1px solid rgba(37,99,235,0.1)', boxShadow: '0 4px 20px rgba(37,99,235,0.08)', borderRadius: 18 }}>
-              <Flex align="center" gap={6} style={{ marginBottom: 10 }}>
-                <span style={{ fontSize: 18 }}>🐙</span>
-                <Title level={4} style={{ margin: 0 }}>GitHub Sync</Title>
-              </Flex>
-              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 10 }}>
-                Data is saved to <code>data/tournaments.json</code> in <strong>nikhilseepana/badminton-tournament</strong>.
-                Token is kept in browser localStorage only — never pushed to GitHub.
-              </Text>
-              <Text style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>GitHub Token (needs <code>repo</code> scope)</Text>
-              <Flex gap="small" style={{ marginBottom: 8 }}>
-                <Input.Password
-                  value={githubToken}
-                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                  onChange={(e) => { setGithubToken(e.target.value); localStorage.setItem('badtour_gh_token', e.target.value); }}
-                  style={{ flex: 1 }}
-                  size="small"
-                />
-                {['localhost', '127.0.0.1'].includes(window.location.hostname) && (
-                  <Button size="small" onClick={handleFillTokenFromGhCLI} title="Auto-fill using gh CLI">
-                    gh CLI
-                  </Button>
-                )}
-              </Flex>
-              <Flex gap="small" align="center" wrap="wrap">
-                <Button type="primary" loading={syncing} disabled={!githubToken || syncing} onClick={handlePushToGitHub}>
-                  ⬆ Push to GitHub
-                </Button>
-                <Button loading={syncing} disabled={!githubToken || syncing} onClick={handlePullFromGitHub}>
-                  ⬇ Pull from GitHub
-                </Button>
-                {syncStatus && (
-                  <Text style={{ fontSize: 12, color: syncStatus.startsWith('✅') ? '#16a34a' : syncStatus.startsWith('⏳') ? '#2563eb' : '#dc2626' }}>
-                    {syncStatus}
-                  </Text>
-                )}
-              </Flex>
             </Card>
           )}
 
