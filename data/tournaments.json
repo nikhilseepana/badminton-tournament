@@ -1,0 +1,16 @@
+{
+  "tournaments": [
+    {
+      "id": 1,
+      "name": "Summer Smash Cup",
+      "teams": [],
+      "matches": [],
+      "selectedMatchId": null,
+      "playerPool": [],
+      "courts": 2,
+      "format": "league"
+    }
+  ],
+  "activeTournamentId": 1,
+  "savedAt": "2026-07-03T11:25:45.179Z"
+}
