@@ -852,9 +852,11 @@ function App() {
                   style={{ flex: 1 }}
                   size="small"
                 />
-                <Button size="small" onClick={handleFillTokenFromGhCLI} title="Auto-fill using gh CLI">
-                  gh CLI
-                </Button>
+                {['localhost', '127.0.0.1'].includes(window.location.hostname) && (
+                  <Button size="small" onClick={handleFillTokenFromGhCLI} title="Auto-fill using gh CLI">
+                    gh CLI
+                  </Button>
+                )}
               </Flex>
               <Flex gap="small" align="center" wrap="wrap">
                 <Button type="primary" loading={syncing} disabled={!githubToken || syncing} onClick={handlePushToGitHub}>
