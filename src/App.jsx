@@ -229,7 +229,7 @@ function App() {
   const [tournamentForm, setTournamentForm] = useState("");
   const [teamForm, setTeamForm] = useState(initialForm);
   const [playerPoolForm, setPlayerPoolForm] = useState("");
-  const [githubToken, setGithubToken] = useState(() => localStorage.getItem('badtour_gh_token') || '');
+  const [githubToken, setGithubToken] = useState(() => localStorage.getItem('badtour_gh_token') || import.meta.env.VITE_GH_TOKEN || '');
   const [syncStatus, setSyncStatus] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState("fixtures");
