@@ -5,11 +5,13 @@ import TeamsPage from './pages/TeamsPage';
 import DrawPage from './pages/DrawPage';
 import ScorePage from './pages/ScorePage';
 import TablePage from './pages/TablePage';
+import ViewPage from './pages/ViewPage';
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<TournamentsPage />} />
+      <Route path="/view/:id" element={<ViewPage />} />
       <Route path="/t/:id" element={<TournamentLayout />}>
         <Route index element={<Navigate to="teams" replace />} />
         <Route path="teams" element={<TeamsPage />} />

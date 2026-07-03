@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Input, Typography } from 'antd';
-import { FiEdit2, FiTrash2, FiBarChart2, FiChevronRight, FiPlus, FiX, FiUser } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiBarChart2, FiChevronRight, FiPlus, FiX, FiUser, FiArchive, FiShare2 } from 'react-icons/fi';
 import { GiShuttlecock } from 'react-icons/gi';
 import { useTournaments } from '../context/TournamentsContext';
 import { getTournamentStatus } from '../utils/helpers';
@@ -28,6 +28,7 @@ export default function TournamentsPage() {
   const {
     tournaments, syncStatus, syncing,
     createNewTournament, renameTournament, deleteTournament,
+    archiveTournament, unarchiveTournament,
   } = useTournaments();
 
   const [showCreate, setShowCreate] = useState(false);
@@ -37,6 +38,16 @@ export default function TournamentsPage() {
   const [groupFormatForm, setGroupFormatForm] = useState('league');
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
+
+  function copyShareLink(e, id) {
+    e.stopPropagation();
+    const url = `${window.location.origin}${window.location.pathname}#/view/${id}`;
+    navigator.clipboard.writeText(url).catch(() => {});
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }
 
   function handleCreate(e) {
     e.preventDefault();
@@ -58,6 +69,10 @@ export default function TournamentsPage() {
   }
 
   const doneCounts = (t) => t.matches.filter((m) => m.winnerId !== null).length;
+
+  const liveTournaments = tournaments.filter(t => !t.archived);
+  const archivedTournaments = tournaments.filter(t => t.archived);
+  const visibleTournaments = showArchived ? archivedTournaments : liveTournaments;
 
   return (
     <div style={{
@@ -107,8 +122,12 @@ export default function TournamentsPage() {
         {/* Section header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.4px' }}>Tournaments</div>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 1 }}>{tournaments.length} event{tournaments.length !== 1 ? 's' : ''}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.4px' }}>
+              {showArchived ? 'Archived' : 'Tournaments'}
+            </div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 1 }}>
+              {showArchived ? `${archivedTournaments.length} archived` : `${liveTournaments.length} event${liveTournaments.length !== 1 ? 's' : ''}`}
+            </div>
           </div>
           <button
             onClick={() => setShowCreate((v) => !v)}
@@ -183,16 +202,22 @@ export default function TournamentsPage() {
 
         {/* Tournament list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {tournaments.length === 0 && !showCreate && (
+          {visibleTournaments.length === 0 && !showCreate && (
             <div style={{ textAlign: 'center', padding: '40px 20px' }}>
               <GiShuttlecock size={48} color="#cbd5e1" style={{ marginBottom: 12 }} />
-              <div style={{ fontSize: 15, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>No tournaments yet</div>
-              <div style={{ fontSize: 13, color: '#cbd5e1', marginBottom: 16 }}>Tap <strong>New</strong> to create your first one</div>
-              <button onClick={() => setShowCreate(true)} style={{ padding: '10px 24px', borderRadius: 12, background: '#2563eb', color: '#fff', border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>+ Create Tournament</button>
+              <div style={{ fontSize: 15, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>
+                {showArchived ? 'No archived tournaments' : 'No tournaments yet'}
+              </div>
+              {!showArchived && (
+                <>
+                  <div style={{ fontSize: 13, color: '#cbd5e1', marginBottom: 16 }}>Tap <strong>New</strong> to create your first one</div>
+                  <button onClick={() => setShowCreate(true)} style={{ padding: '10px 24px', borderRadius: 12, background: '#2563eb', color: '#fff', border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>+ Create Tournament</button>
+                </>
+              )}
             </div>
           )}
 
-          {tournaments.map((t) => {
+          {visibleTournaments.map((t) => {
             const done = doneCounts(t);
             const total = t.matches.length;
             const fmt = t.format || 'league';
@@ -201,8 +226,8 @@ export default function TournamentsPage() {
             const fmtLabel = fmt === 'knockout' ? 'Knockout' : fmt === 'groups' ? `Groups ×${t.numGroups ?? 2}` : 'League';
             const status = getTournamentStatus(t);
             const statusMeta = {
-              setup:     { label: 'Setup',     bg: '#f1f5f9', color: '#64748b' },
-              ongoing:   { label: 'Ongoing',   bg: '#fff7ed', color: '#ea580c' },
+              setup:     { label: 'Upcoming', bg: '#eff6ff', color: '#2563eb' },
+              ongoing:   { label: 'Live 🔴',   bg: '#fff7ed', color: '#ea580c' },
               completed: { label: 'Completed', bg: '#f0fdf4', color: '#16a34a' },
             }[status];
 
@@ -249,6 +274,10 @@ export default function TournamentsPage() {
                     {/* Edit / delete */}
                     <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
                       <button onClick={(e) => { e.stopPropagation(); setEditingId(t.id); setEditingName(t.name); }} style={{ width: 30, height: 30, borderRadius: 8, border: 'none', background: 'transparent', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><FiEdit2 size={13} /></button>
+                      {t.archived
+                        ? <button onClick={(e) => { e.stopPropagation(); unarchiveTournament(t.id); }} style={{ width: 30, height: 30, borderRadius: 8, border: 'none', background: 'transparent', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} title="Unarchive"><FiArchive size={13} /></button>
+                        : <button onClick={(e) => { e.stopPropagation(); archiveTournament(t.id); }} style={{ width: 30, height: 30, borderRadius: 8, border: 'none', background: 'transparent', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} title="Archive"><FiArchive size={13} /></button>
+                      }
                       <button onClick={(e) => { e.stopPropagation(); deleteTournament(t.id); }} style={{ width: 30, height: 30, borderRadius: 8, border: 'none', background: 'transparent', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><FiTrash2 size={13} /></button>
                     </div>
                   </div>
@@ -266,15 +295,32 @@ export default function TournamentsPage() {
                   </button>
                   <button
                     onClick={() => navigate(`/t/${t.id}/table`)}
-                    style={{ flex: 1, padding: '11px 0', border: 'none', background: 'transparent', color: '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, WebkitTapHighlightColor: 'transparent' }}
+                    style={{ flex: 1, padding: '11px 0', border: 'none', background: 'transparent', color: '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, borderRight: '1px solid #f1f5f9', WebkitTapHighlightColor: 'transparent' }}
                   >
                     <FiBarChart2 size={13} /> Stats
+                  </button>
+                  <button
+                    onClick={(e) => copyShareLink(e, t.id)}
+                    style={{ flex: 1, padding: '11px 0', border: 'none', background: copiedId === t.id ? '#f0fdf4' : 'transparent', color: copiedId === t.id ? '#16a34a' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, WebkitTapHighlightColor: 'transparent', transition: 'all 0.2s' }}
+                  >
+                    <FiShare2 size={13} /> {copiedId === t.id ? 'Copied!' : 'Share'}
                   </button>
                 </div>
               </div>
             );
           })}
         </div>
+
+        {/* Archived toggle */}
+        {archivedTournaments.length > 0 && (
+          <button
+            onClick={() => setShowArchived(v => !v)}
+            style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, border: '1.5px dashed #e2e8f0', background: 'transparent', color: '#94a3b8', fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+          >
+            <FiArchive size={13} />
+            {showArchived ? 'Hide Archived' : `Show Archived (${archivedTournaments.length})`}
+          </button>
+        )}
       </div>
     </div>
   );

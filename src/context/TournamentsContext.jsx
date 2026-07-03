@@ -187,10 +187,10 @@ export function TournamentsProvider({ children }) {
         });
         showStatus(patchRes.ok ? '✅ Saved' : `❌ GitHub error ${patchRes.status}`);
       } else {
-        // First push ever — create a new private gist
+        // First push ever — create a new public gist (public so share URLs work)
         const postRes = await fetch(`${GH_API}/gists`, {
           method: 'POST', headers: hdrs,
-          body: JSON.stringify({ description: 'BadTour data', public: false, files: { [GIST_FILE]: { content: gistContent(data) } } }),
+          body: JSON.stringify({ description: 'BadTour data', public: true, files: { [GIST_FILE]: { content: gistContent(data) } } }),
         });
         if (postRes.ok) {
           const gist = await postRes.json();
@@ -259,6 +259,14 @@ export function TournamentsProvider({ children }) {
     updateTournament(id, (t) => ({ ...t, name }));
   }
 
+  function archiveTournament(id) {
+    updateTournament(id, (t) => ({ ...t, archived: true }));
+  }
+
+  function unarchiveTournament(id) {
+    updateTournament(id, (t) => ({ ...t, archived: false }));
+  }
+
   async function deleteTournament(id) {
     markDeleted(id);
     const next = tournamentsRef.current.filter((x) => x.id !== id);
@@ -305,6 +313,8 @@ export function TournamentsProvider({ children }) {
       createNewTournament,
       renameTournament,
       deleteTournament,
+      archiveTournament,
+      unarchiveTournament,
       handlePushToGitHub,
       handlePullFromGitHub,
     }}>
