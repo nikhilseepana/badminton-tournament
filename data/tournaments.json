@@ -9,8 +9,77 @@
       "playerPool": [],
       "courts": 2,
       "format": "league"
+    },
+    {
+      "id": 2,
+      "name": "july 3rd",
+      "teams": [
+        {
+          "id": 1,
+          "name": "nik & varun",
+          "players": [
+            "nik",
+            "varun"
+          ]
+        },
+        {
+          "id": 2,
+          "name": "a & b",
+          "players": [
+            "a",
+            "b"
+          ]
+        },
+        {
+          "id": 3,
+          "name": "c & d",
+          "players": [
+            "c",
+            "d"
+          ]
+        }
+      ],
+      "matches": [
+        {
+          "id": 1,
+          "teamAId": 2,
+          "teamBId": 3,
+          "scoreA": 0,
+          "scoreB": 0,
+          "winnerId": null,
+          "servingTeamId": 2,
+          "round": 1,
+          "court": 1
+        },
+        {
+          "id": 2,
+          "teamAId": 1,
+          "teamBId": 3,
+          "scoreA": 0,
+          "scoreB": 0,
+          "winnerId": null,
+          "servingTeamId": 1,
+          "round": 2,
+          "court": 1
+        },
+        {
+          "id": 3,
+          "teamAId": 1,
+          "teamBId": 2,
+          "scoreA": 0,
+          "scoreB": 0,
+          "winnerId": null,
+          "servingTeamId": 1,
+          "round": 3,
+          "court": 1
+        }
+      ],
+      "selectedMatchId": null,
+      "playerPool": [],
+      "courts": 2,
+      "format": "league"
     }
   ],
-  "activeTournamentId": 1,
-  "savedAt": "2026-07-03T11:25:45.179Z"
+  "activeTournamentId": 2,
+  "savedAt": "2026-07-03T11:29:06.947Z"
 }
