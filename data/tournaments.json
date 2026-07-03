@@ -1240,9 +1240,9 @@
           "teamAId": 1,
           "teamBId": 5,
           "scoreA": 0,
-          "scoreB": 0,
-          "winnerId": null,
-          "servingTeamId": 1,
+          "scoreB": 21,
+          "winnerId": 5,
+          "servingTeamId": 5,
           "round": 6,
           "court": 1,
           "teamAFrom": null,
@@ -1265,12 +1265,12 @@
         },
         {
           "id": 13,
-          "teamAId": null,
+          "teamAId": 5,
           "teamBId": null,
           "scoreA": 0,
           "scoreB": 0,
           "winnerId": null,
-          "servingTeamId": null,
+          "servingTeamId": 5,
           "round": 7,
           "court": 1,
           "teamAFrom": 11,
@@ -1278,11 +1278,11 @@
           "phase": "playoff"
         }
       ],
-      "selectedMatchId": 9,
+      "selectedMatchId": 11,
       "playerPool": [],
       "courts": 2,
       "format": "league"
     }
   ],
-  "savedAt": "2026-07-03T19:19:46.713Z"
+  "savedAt": "2026-07-03T19:19:54.686Z"
 }
