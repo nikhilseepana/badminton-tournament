@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { GiShuttlecock } from 'react-icons/gi';
-import { FiRefreshCw, FiUsers, FiCalendar, FiBarChart2 } from 'react-icons/fi';
+import { FiRefreshCw, FiUsers, FiCalendar, FiBarChart2, FiUserPlus } from 'react-icons/fi';
 
 const GH_API = 'https://api.github.com';
 const REPO = 'nikhilseepana/badminton-tournament';
@@ -45,6 +45,12 @@ export default function ViewPage() {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [tab, setTab] = useState('draw');
+  const [joinP1, setJoinP1] = useState('');
+  const [joinP2, setJoinP2] = useState('');
+  const [joinTeam, setJoinTeam] = useState('');
+  const [joinEdited, setJoinEdited] = useState(false);
+  const [joinResult, setJoinResult] = useState(null); // 'sent' | 'link'
+  const [joinLink, setJoinLink] = useState('');
 
   const loadData = useCallback(async () => {
     try {
@@ -167,7 +173,36 @@ export default function ViewPage() {
     { key: 'draw', icon: <FiCalendar size={13} />, label: 'Draw' },
     { key: 'table', icon: <FiBarChart2 size={13} />, label: 'Standings' },
     { key: 'teams', icon: <FiUsers size={13} />, label: 'Teams' },
+    { key: 'join', icon: <FiUserPlus size={13} />, label: 'Join' },
   ];
+
+  function handleJoinP1(v) { setJoinP1(v); if (!joinEdited) setJoinTeam(v && joinP2 ? `${v} & ${joinP2}` : v || joinP2 || ''); }
+  function handleJoinP2(v) { setJoinP2(v); if (!joinEdited) setJoinTeam(joinP1 && v ? `${joinP1} & ${v}` : joinP1 || v || ''); }
+
+  function handleJoinSubmit(e) {
+    e.preventDefault();
+    const p1 = joinP1.trim(), p2 = joinP2.trim(), tName = joinTeam.trim() || `${p1} & ${p2}`;
+    if (!p1 || !p2) return;
+    // Try writing to localStorage (same device as admin)
+    try {
+      const saved = localStorage.getItem('badtour_data');
+      if (saved) {
+        const all = JSON.parse(saved);
+        const idx = all.findIndex(t => t.id === tournamentId);
+        if (idx !== -1) {
+          all[idx] = { ...all[idx], teamRequests: [...(all[idx].teamRequests || []), { id: Date.now(), player1: p1, player2: p2, teamName: tName, status: 'pending', createdAt: new Date().toISOString() }] };
+          localStorage.setItem('badtour_data', JSON.stringify(all));
+          setJoinResult('sent');
+          return;
+        }
+      }
+    } catch {}
+    // Cross-device: generate a link for the admin to open
+    const base = `${window.location.origin}${window.location.pathname}`;
+    const link = `${base}#/t/${tournamentId}/teams?joinp1=${encodeURIComponent(p1)}&joinp2=${encodeURIComponent(p2)}&jointeam=${encodeURIComponent(tName)}`;
+    setJoinLink(link);
+    setJoinResult('link');
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg,#eff6ff,#f8faff,#f0fdf4)', fontFamily: "'SF Pro Display','Avenir Next','Segoe UI',sans-serif", paddingBottom: 32 }}>
@@ -356,6 +391,42 @@ export default function ViewPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* JOIN TAB */}
+        {tab === 'join' && (
+          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8eef6', padding: '18px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+            <div style={{ fontWeight: 800, fontSize: 16, color: '#0f172a', marginBottom: 4 }}>🙋 Request to Join</div>
+            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 14 }}>Enter your names and submit — the admin will see and approve your request.</div>
+            {joinResult === 'sent' ? (
+              <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#16a34a', marginBottom: 4 }}>Request sent!</div>
+                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>The admin will see your request and approve it shortly.</div>
+                <button onClick={() => { setJoinResult(null); setJoinP1(''); setJoinP2(''); setJoinTeam(''); setJoinEdited(false); }} style={{ padding: '8px 20px', borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#2563eb', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>New Request</button>
+              </div>
+            ) : joinResult === 'link' ? (
+              <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>🔗</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 4 }}>Share this link with the admin</div>
+                <div style={{ fontSize: 11, color: '#64748b', marginBottom: 12 }}>Admin opens the link → your request appears instantly for approval.</div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 10px', marginBottom: 10, wordBreak: 'break-all', fontSize: 10, color: '#475569', textAlign: 'left' }}>{joinLink}</div>
+                <button onClick={() => { navigator.clipboard.writeText(joinLink).catch(() => {}); }} style={{ padding: '8px 20px', borderRadius: 10, background: '#2563eb', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 13, marginRight: 8 }}>📋 Copy Link</button>
+                <button onClick={() => { setJoinResult(null); setJoinP1(''); setJoinP2(''); setJoinTeam(''); setJoinEdited(false); }} style={{ padding: '8px 16px', borderRadius: 10, background: '#f1f5f9', border: 'none', color: '#475569', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>Back</button>
+              </div>
+            ) : (
+              <form onSubmit={handleJoinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input value={joinP1} onChange={e => handleJoinP1(e.target.value)} placeholder="Player 1 name" required style={{ flex: 1, padding: '9px 12px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none' }} />
+                  <input value={joinP2} onChange={e => handleJoinP2(e.target.value)} placeholder="Player 2 name" required style={{ flex: 1, padding: '9px 12px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none' }} />
+                </div>
+                <input value={joinTeam} onChange={e => { setJoinTeam(e.target.value); setJoinEdited(true); }} placeholder="Team name (auto-filled)" style={{ padding: '9px 12px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none', color: '#374151' }} />
+                <button type="submit" disabled={!joinP1.trim() || !joinP2.trim()} style={{ padding: '11px', borderRadius: 12, background: joinP1.trim() && joinP2.trim() ? '#2563eb' : '#e2e8f0', border: 'none', color: joinP1.trim() && joinP2.trim() ? '#fff' : '#94a3b8', fontWeight: 700, fontSize: 14, cursor: joinP1.trim() && joinP2.trim() ? 'pointer' : 'not-allowed' }}>
+                  Send Request
+                </button>
+              </form>
+            )}
           </div>
         )}
       </div>

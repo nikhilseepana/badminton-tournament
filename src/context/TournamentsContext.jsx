@@ -267,6 +267,28 @@ export function TournamentsProvider({ children }) {
     updateTournament(id, (t) => ({ ...t, archived: false }));
   }
 
+  function addTeamRequest(tournamentId, { player1, player2, teamName }) {
+    updateTournament(tournamentId, (t) => ({
+      ...t,
+      teamRequests: [...(t.teamRequests || []), { id: Date.now(), player1, player2, teamName, status: 'pending', createdAt: new Date().toISOString() }],
+    }));
+  }
+
+  function approveTeamRequest(tournamentId, requestId, newTeam) {
+    updateTournament(tournamentId, (t) => ({
+      ...t,
+      teams: [...t.teams, newTeam],
+      teamRequests: (t.teamRequests || []).map(r => r.id === requestId ? { ...r, status: 'approved' } : r),
+    }));
+  }
+
+  function rejectTeamRequest(tournamentId, requestId) {
+    updateTournament(tournamentId, (t) => ({
+      ...t,
+      teamRequests: (t.teamRequests || []).map(r => r.id === requestId ? { ...r, status: 'rejected' } : r),
+    }));
+  }
+
   async function deleteTournament(id) {
     markDeleted(id);
     const next = tournamentsRef.current.filter((x) => x.id !== id);
@@ -315,6 +337,9 @@ export function TournamentsProvider({ children }) {
       deleteTournament,
       archiveTournament,
       unarchiveTournament,
+      addTeamRequest,
+      approveTeamRequest,
+      rejectTeamRequest,
       handlePushToGitHub,
       handlePullFromGitHub,
     }}>

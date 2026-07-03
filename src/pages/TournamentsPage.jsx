@@ -34,8 +34,8 @@ export default function TournamentsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [nameForm, setNameForm] = useState('');
   const [formatForm, setFormatForm] = useState('league');
-  const [numGroupsForm, setNumGroupsForm] = useState(2);
-  const [groupFormatForm, setGroupFormatForm] = useState('league');
+  const [numGroupsForm, setNumGroupsForm] = useState(0);
+  const [groupFormatForm] = useState('league');
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [showArchived, setShowArchived] = useState(false);
@@ -53,13 +53,12 @@ export default function TournamentsPage() {
     e.preventDefault();
     const name = nameForm.trim();
     if (!name) return;
-    const newId = createNewTournament(name, formatForm, numGroupsForm, groupFormatForm);
+    const effectiveFormat = numGroupsForm > 0 ? 'groups' : formatForm;
+    const newId = createNewTournament(name, effectiveFormat, numGroupsForm || 2, groupFormatForm);
     setNameForm('');
     setFormatForm('league');
-    setNumGroupsForm(2);
-    setGroupFormatForm('league');
+    setNumGroupsForm(0);
     setShowCreate(false);
-    navigate(`/t/${newId}/teams`);
   }
 
   function saveEdit(id) {
@@ -158,40 +157,47 @@ export default function TournamentsPage() {
               style={{ borderRadius: 10 }}
             />
             <div style={{ display: 'flex', gap: 8 }}>
-              {[{ v: 'league', label: '🔄 League', desc: 'Round robin + playoffs' }, { v: 'knockout', label: '🥊 Knockout', desc: 'Single elimination' }, { v: 'groups', label: '👥 Groups', desc: 'Group stage + playoffs' }].map(({ v, label, desc }) => (
-                <div
-                  key={v}
-                  onClick={() => setFormatForm(v)}
-                  style={{
-                    flex: 1, padding: '10px 8px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s',
-                    background: formatForm === v ? '#eff6ff' : '#f8fafc',
-                    border: formatForm === v ? '2px solid #2563eb' : '1.5px solid #e2e8f0',
-                    textAlign: 'center',
-                  }}
-                >
-                  <div style={{ fontSize: 13, fontWeight: 700, color: formatForm === v ? '#1d4ed8' : '#374151' }}>{label}</div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{desc}</div>
-                </div>
-              ))}
+              {[
+                { v: 'league',   icon: '🔄', name: 'League',   desc: 'Round robin' },
+                { v: 'knockout', icon: '🥊', name: 'Knockout', desc: 'Single elimination' },
+              ].map(({ v, icon, name, desc }) => {
+                const sel = formatForm === v;
+                return (
+                  <div
+                    key={v}
+                    onClick={() => { setFormatForm(v); if (v !== 'league') setNumGroupsForm(0); }}
+                    style={{
+                      flex: 1, padding: '10px 8px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s',
+                      background: sel ? '#eff6ff' : '#f8fafc',
+                      border: sel ? '2px solid #2563eb' : '1.5px solid #e2e8f0',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: 22 }}>{icon}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: sel ? '#1d4ed8' : '#374151', marginTop: 4 }}>{name}</div>
+                    <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2, lineHeight: 1.3 }}>{desc}</div>
+                  </div>
+                );
+              })}
             </div>
-            {formatForm === 'groups' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px', borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1d4ed8', whiteSpace: 'nowrap' }}>Groups:</span>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {[2, 3, 4].map((n) => (
-                      <button key={n} onClick={() => setNumGroupsForm(n)} style={{ width: 32, height: 32, borderRadius: 8, border: numGroupsForm === n ? '2px solid #2563eb' : '1.5px solid #e2e8f0', background: numGroupsForm === n ? '#2563eb' : '#fff', color: numGroupsForm === n ? '#fff' : '#374151', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>{n}</button>
-                    ))}
-                  </div>
+            {(formatForm === 'league' || formatForm === 'knockout') && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b', whiteSpace: 'nowrap' }}>👥 Groups:</span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {[{ n: 0, label: '—' }, { n: 2, label: '2' }, { n: 3, label: '3' }, { n: 4, label: '4' }].map(({ n, label }) => {
+                    const active = numGroupsForm === n;
+                    return (
+                      <button key={n} onClick={() => setNumGroupsForm(n)} style={{
+                        minWidth: 32, height: 30, borderRadius: 8, cursor: 'pointer', padding: '0 8px',
+                        border: active ? '2px solid #7c3aed' : '1.5px solid #e2e8f0',
+                        background: active ? '#7c3aed' : '#fff',
+                        color: active ? '#fff' : '#374151',
+                        fontWeight: 700, fontSize: 13,
+                      }}>{label}</button>
+                    );
+                  })}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1d4ed8', whiteSpace: 'nowrap' }}>Within group:</span>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {[{ v: 'league', label: '🔄 League' }, { v: 'knockout', label: '🥊 Knockout' }].map(({ v, label }) => (
-                      <button key={v} onClick={() => setGroupFormatForm(v)} style={{ padding: '4px 12px', borderRadius: 8, border: groupFormatForm === v ? '2px solid #2563eb' : '1.5px solid #e2e8f0', background: groupFormatForm === v ? '#2563eb' : '#fff', color: groupFormatForm === v ? '#fff' : '#374151', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>{label}</button>
-                    ))}
-                  </div>
-                </div>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>{numGroupsForm > 0 ? `${numGroupsForm} group stage → playoffs` : 'no groups'}</span>
               </div>
             )}
             <Button type="primary" htmlType="submit" block size="large" style={{ borderRadius: 12, fontWeight: 700, height: 46 }}>
@@ -225,11 +231,14 @@ export default function TournamentsPage() {
             const fmtBg = fmt === 'knockout' ? 'linear-gradient(135deg,#ff6b35,#f43f5e)' : fmt === 'groups' ? 'linear-gradient(135deg,#7c3aed,#a855f7)' : 'linear-gradient(135deg,#2563eb,#06b6d4)';
             const fmtLabel = fmt === 'knockout' ? 'Knockout' : fmt === 'groups' ? `Groups ×${t.numGroups ?? 2}` : 'League';
             const status = getTournamentStatus(t);
+            const pendingRequests = (t.teamRequests || []).filter(r => r.status === 'pending').length;
+            const effectiveStatus = t.archived ? 'archived' : status;
             const statusMeta = {
               setup:     { label: 'Upcoming', bg: '#eff6ff', color: '#2563eb' },
               ongoing:   { label: 'Live 🔴',   bg: '#fff7ed', color: '#ea580c' },
               completed: { label: 'Completed', bg: '#f0fdf4', color: '#16a34a' },
-            }[status];
+              archived:  { label: 'Archived',  bg: '#f1f5f9', color: '#64748b' },
+            }[effectiveStatus];
 
             return (
               <div
@@ -267,6 +276,11 @@ export default function TournamentsPage() {
                             <span style={{ padding: '1px 7px', borderRadius: 99, background: statusMeta.bg, color: statusMeta.color, fontWeight: 700, fontSize: 10 }}>
                               {statusMeta.label}
                             </span>
+                            {pendingRequests > 0 && (
+                              <span style={{ padding: '1px 7px', borderRadius: 99, background: '#fef9c3', color: '#a16207', fontWeight: 700, fontSize: 10 }}>
+                                🙋 {pendingRequests} request{pendingRequests > 1 ? 's' : ''}
+                              </span>
+                            )}
                           </div>
                         </>
                       )}
@@ -288,7 +302,7 @@ export default function TournamentsPage() {
                 {/* Card actions */}
                 <div style={{ display: 'flex', borderTop: '1px solid #f1f5f9' }}>
                   <button
-                    onClick={() => navigate(`/t/${t.id}/${t.teams.length === 0 ? 'teams' : 'draw'}`)}
+                    onClick={() => navigate(`/t/${t.id}/${t.matches.length > 0 ? 'draw' : 'teams'}`)}
                     style={{ flex: 1, padding: '11px 0', border: 'none', background: 'transparent', color: '#2563eb', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, borderRight: '1px solid #f1f5f9', WebkitTapHighlightColor: 'transparent' }}
                   >
                     Open <FiChevronRight size={14} />
