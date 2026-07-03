@@ -2,7 +2,7 @@ import "./App.css";
 import "antd/dist/reset.css";
 import { useEffect, useMemo, useState } from "react";
 import { GiShuttlecock } from "react-icons/gi";
-import { FiEdit2, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiUsers, FiCalendar, FiBarChart2, FiAward, FiActivity, FiUploadCloud, FiDownloadCloud } from "react-icons/fi";
 import {
   Button,
   Card,
@@ -29,11 +29,11 @@ const initialForm = {
 const DEMO_TEAMS = [];
 
 const TABS = [
-  { key: "tournaments", label: "Events", icon: "🏆" },
-  { key: "teams", label: "Teams", icon: "👥" },
-  { key: "fixtures", label: "Draw", icon: "📋" },
-  { key: "match", label: "Score", icon: "🏸" },
-  { key: "standings", label: "Table", icon: "📊" },
+  { key: "tournaments", label: "Events", Icon: FiAward },
+  { key: "teams", label: "Teams", Icon: FiUsers },
+  { key: "fixtures", label: "Draw", Icon: FiCalendar },
+  { key: "match", label: "Score", Icon: FiActivity },
+  { key: "standings", label: "Table", Icon: FiBarChart2 },
 ];
 
 function ShuttleIcon({ size = 16 }) {
@@ -774,7 +774,7 @@ function App() {
                   WebkitTapHighlightColor: "transparent",
                 }}
               >
-                {tab.icon} {tab.label}
+                <tab.Icon size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} />{tab.label}
               </button>
             ))}
           </div>
@@ -835,8 +835,8 @@ function App() {
                   Tournaments
                 </Title>
                 <Flex gap={4} align="center">
-                  <Button size="small" loading={syncing} disabled={syncing} onClick={handlePullFromGitHub} title="Pull from GitHub">⬇</Button>
-                  <Button size="small" type="primary" loading={syncing} disabled={syncing} onClick={handlePushToGitHub} title="Push to GitHub">⬆</Button>
+                  <Button size="small" loading={syncing} disabled={syncing} onClick={handlePullFromGitHub} title="Pull from GitHub" icon={<FiDownloadCloud />} />
+                  <Button size="small" type="primary" loading={syncing} disabled={syncing} onClick={handlePushToGitHub} title="Push to GitHub" icon={<FiUploadCloud />} />
                   {syncStatus && <Text style={{ fontSize: 11, color: syncStatus.startsWith('✅') ? '#16a34a' : syncStatus.startsWith('⏳') ? '#2563eb' : '#dc2626' }}>{syncStatus}</Text>}
                 </Flex>
               </Flex>
@@ -1547,7 +1547,7 @@ function App() {
                   WebkitTapHighlightColor: "transparent",
                 }}
               >
-                <span style={{ fontSize: 18, lineHeight: 1 }}>{tab.icon}</span>
+                <span style={{ fontSize: 18, lineHeight: 1 }}><tab.Icon size={20} /></span>
                 <span
                   style={{
                     fontSize: 10,
