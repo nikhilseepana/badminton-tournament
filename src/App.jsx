@@ -2,6 +2,7 @@ import "./App.css";
 import "antd/dist/reset.css";
 import { useEffect, useMemo, useState } from "react";
 import { GiShuttlecock } from "react-icons/gi";
+import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import {
   Button,
   Card,
@@ -891,8 +892,8 @@ function App() {
                       </div>
                     )}
                     <Flex gap={4}>
-                      <Button size="small" type="text" onClick={(e) => { e.stopPropagation(); handleStartEdit(tournament); }} style={{ padding: '0 6px' }}>✏️</Button>
-                      <Button size="small" type="text" danger onClick={(e) => { e.stopPropagation(); handleDeleteTournament(tournament.id); }} style={{ padding: '0 6px' }}>🗑️</Button>
+                      <Button size="small" type="text" onClick={(e) => { e.stopPropagation(); handleStartEdit(tournament); }} icon={<FiEdit2 />} style={{ padding: '0 6px' }} />
+                      <Button size="small" type="text" danger onClick={(e) => { e.stopPropagation(); handleDeleteTournament(tournament.id); }} icon={<FiTrash2 />} style={{ padding: '0 6px' }} />
                     </Flex>
                   </div>
                 ))}
