@@ -1078,7 +1078,17 @@
       "playerPool": [],
       "courts": 2,
       "format": "league"
+    },
+    {
+      "id": 6,
+      "name": "test 1",
+      "teams": [],
+      "matches": [],
+      "selectedMatchId": null,
+      "playerPool": [],
+      "courts": 2,
+      "format": "league"
     }
   ],
-  "savedAt": "2026-07-03T19:02:01.864Z"
+  "savedAt": "2026-07-03T19:02:36.534Z"
 }
