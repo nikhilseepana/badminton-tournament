@@ -214,6 +214,19 @@ function createTournament(id, name, teams = [], courts = 2, format = "league") {
   };
 }
 
+const GH_DATA = 'https://api.github.com/repos/nikhilseepana/badminton-tournament/contents/data';
+function b64enc(str) {
+  let bin = ''; const b = new TextEncoder().encode(str);
+  for (let i = 0; i < b.length; i++) bin += String.fromCharCode(b[i]);
+  return btoa(bin);
+}
+function b64dec(s) {
+  const raw = atob(s.replace(/\n/g, ''));
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
 function App() {
   const [tournaments, setTournaments] = useState(() => {
     try {
@@ -231,6 +244,8 @@ function App() {
   const [githubToken, setGithubToken] = useState(() => localStorage.getItem('badtour_gh_token') || import.meta.env.VITE_GH_TOKEN || '');
   const [syncStatus, setSyncStatus] = useState('');
   const [syncing, setSyncing] = useState(false);
+  const [editingTournamentId, setEditingTournamentId] = useState(null);
+  const [editingName, setEditingName] = useState('');
   const [activeTab, setActiveTab] = useState("fixtures");
 
   useEffect(() => {
@@ -650,25 +665,61 @@ function App() {
   }
 
   async function handlePullFromGitHub() {
-    if (!githubToken.trim()) { setSyncStatus('❌ Enter a GitHub token first'); return; }
-    setSyncing(true); setSyncStatus('⏳ Loading from GitHub...');
+    if (!githubToken.trim()) { setSyncStatus('❌ No token'); return; }
+    setSyncing(true); setSyncStatus('⏳ Loading...');
     try {
-      const res = await fetch('https://api.github.com/repos/nikhilseepana/badminton-tournament/contents/data/tournaments.json', {
-        headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github.v3+json' },
-      });
-      if (!res.ok) { setSyncStatus('❌ No data file yet — push first'); setSyncing(false); return; }
-      const file = await res.json();
-      const raw = atob(file.content.replace(/\n/g, ''));
-      const rawBytes = new Uint8Array(raw.length);
-      for (let i = 0; i < raw.length; i++) rawBytes[i] = raw.charCodeAt(i);
-      const decoded = JSON.parse(new TextDecoder().decode(rawBytes));
-      if (Array.isArray(decoded.tournaments)) {
-        setTournaments(decoded.tournaments);
-        if (decoded.activeTournamentId) setActiveTournamentId(Number(decoded.activeTournamentId));
-        setSyncStatus('✅ Loaded from GitHub!');
+      const hdrs = { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github.v3+json' };
+      const dirRes = await fetch(GH_DATA, { headers: hdrs });
+      if (!dirRes.ok) { setSyncStatus('❌ No data yet — push first'); setSyncing(false); return; }
+      const files = await dirRes.json();
+      const tFiles = files.filter(f => /^tournament-\d+\.json$/.test(f.name));
+      const loaded = await Promise.all(tFiles.map(async (f) => {
+        const r = await fetch(f.url, { headers: hdrs });
+        return JSON.parse(b64dec((await r.json()).content));
+      }));
+      setTournaments(loaded.sort((a, b) => a.id - b.id));
+      const metaFile = files.find(f => f.name === 'meta.json');
+      if (metaFile) {
+        const mr = await fetch(metaFile.url, { headers: hdrs });
+        const meta = JSON.parse(b64dec((await mr.json()).content));
+        if (meta.activeTournamentId) setActiveTournamentId(Number(meta.activeTournamentId));
       }
+      setSyncStatus('✅ Loaded!');
     } catch (e) { setSyncStatus(`❌ ${e.message}`); }
     setSyncing(false);
+  }
+
+  function handleStartEdit(tournament) {
+    setEditingTournamentId(tournament.id);
+    setEditingName(tournament.name);
+  }
+
+  function handleSaveEdit(id) {
+    if (editingName.trim()) {
+      setTournaments(prev => prev.map(t => t.id === id ? { ...t, name: editingName.trim() } : t));
+    }
+    setEditingTournamentId(null);
+    setEditingName('');
+  }
+
+  async function handleDeleteTournament(id) {
+    const t = tournaments.find(x => x.id === id);
+    setTournaments(prev => prev.filter(x => x.id !== id));
+    if (activeTournamentId === id) {
+      const next = tournaments.find(x => x.id !== id);
+      setActiveTournamentId(next ? next.id : null);
+    }
+    if (githubToken.trim()) {
+      try {
+        const hdrs = { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+        const url = `${GH_DATA}/tournament-${id}.json`;
+        const r = await fetch(url, { headers: hdrs });
+        if (r.ok) {
+          const { sha } = await r.json();
+          await fetch(url, { method: 'DELETE', headers: hdrs, body: JSON.stringify({ message: `delete: ${t?.name || id}`, sha }) });
+        }
+      } catch {}
+    }
   }
 
   const servingTeamId = selectedMatch
@@ -811,24 +862,38 @@ function App() {
                 {tournaments.map((tournament) => (
                   <div
                     key={tournament.id}
-                    onClick={() => handleSelectTournament(tournament.id)}
                     style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
                       padding: "10px 12px",
                       borderRadius: 12,
                       border: `1px solid ${tournament.id === activeTournamentId ? "#1d4ed8" : "#d4deea"}`,
-                      background:
-                        tournament.id === activeTournamentId
-                          ? "rgba(29,78,216,0.05)"
-                          : "white",
-                      cursor: "pointer",
+                      background: tournament.id === activeTournamentId ? "rgba(29,78,216,0.05)" : "white",
                     }}
                   >
-                    <Text strong>{tournament.name}</Text>
-                    <br />
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {tournament.teams.length} teams ·{" "}
-                      {tournament.matches.length} fixtures
-                    </Text>
+                    {editingTournamentId === tournament.id ? (
+                      <Input
+                        size="small"
+                        value={editingName}
+                        autoFocus
+                        onChange={(e) => setEditingName(e.target.value)}
+                        onBlur={() => handleSaveEdit(tournament.id)}
+                        onPressEnter={() => handleSaveEdit(tournament.id)}
+                        style={{ flex: 1 }}
+                      />
+                    ) : (
+                      <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => handleSelectTournament(tournament.id)}>
+                        <Text strong>{tournament.name}</Text>
+                        <br />
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {tournament.teams.length} teams ·{" "}
+                          {tournament.matches.length} fixtures
+                        </Text>
+                      </div>
+                    )}
+                    <Flex gap={4}>
+                      <Button size="small" type="text" onClick={(e) => { e.stopPropagation(); handleStartEdit(tournament); }} style={{ padding: '0 6px' }}>✏️</Button>
+                      <Button size="small" type="text" danger onClick={(e) => { e.stopPropagation(); handleDeleteTournament(tournament.id); }} style={{ padding: '0 6px' }}>🗑️</Button>
+                    </Flex>
                   </div>
                 ))}
               </Space>
