@@ -1124,12 +1124,123 @@
           ]
         }
       ],
-      "matches": [],
+      "matches": [
+        {
+          "id": 1,
+          "teamAId": 2,
+          "teamBId": 5,
+          "scoreA": 0,
+          "scoreB": 0,
+          "winnerId": null,
+          "servingTeamId": 2,
+          "round": 1,
+          "court": 1
+        },
+        {
+          "id": 2,
+          "teamAId": 3,
+          "teamBId": 4,
+          "scoreA": 0,
+          "scoreB": 0,
+          "winnerId": null,
+          "servingTeamId": 3,
+          "round": 1,
+          "court": 2
+        },
+        {
+          "id": 3,
+          "teamAId": 1,
+          "teamBId": 5,
+          "scoreA": 0,
+          "scoreB": 0,
+          "winnerId": null,
+          "servingTeamId": 1,
+          "round": 2,
+          "court": 1
+        },
+        {
+          "id": 4,
+          "teamAId": 2,
+          "teamBId": 3,
+          "scoreA": 0,
+          "scoreB": 0,
+          "winnerId": null,
+          "servingTeamId": 2,
+          "round": 2,
+          "court": 2
+        },
+        {
+          "id": 5,
+          "teamAId": 1,
+          "teamBId": 4,
+          "scoreA": 0,
+          "scoreB": 0,
+          "winnerId": null,
+          "servingTeamId": 1,
+          "round": 3,
+          "court": 1
+        },
+        {
+          "id": 6,
+          "teamAId": 5,
+          "teamBId": 3,
+          "scoreA": 0,
+          "scoreB": 0,
+          "winnerId": null,
+          "servingTeamId": 5,
+          "round": 3,
+          "court": 2
+        },
+        {
+          "id": 7,
+          "teamAId": 1,
+          "teamBId": 3,
+          "scoreA": 0,
+          "scoreB": 0,
+          "winnerId": null,
+          "servingTeamId": 1,
+          "round": 4,
+          "court": 1
+        },
+        {
+          "id": 8,
+          "teamAId": 4,
+          "teamBId": 2,
+          "scoreA": 0,
+          "scoreB": 0,
+          "winnerId": null,
+          "servingTeamId": 4,
+          "round": 4,
+          "court": 2
+        },
+        {
+          "id": 9,
+          "teamAId": 1,
+          "teamBId": 2,
+          "scoreA": 0,
+          "scoreB": 0,
+          "winnerId": null,
+          "servingTeamId": 1,
+          "round": 5,
+          "court": 1
+        },
+        {
+          "id": 10,
+          "teamAId": 4,
+          "teamBId": 5,
+          "scoreA": 0,
+          "scoreB": 0,
+          "winnerId": null,
+          "servingTeamId": 4,
+          "round": 5,
+          "court": 2
+        }
+      ],
       "selectedMatchId": null,
       "playerPool": [],
       "courts": 2,
       "format": "league"
     }
   ],
-  "savedAt": "2026-07-03T19:08:45.888Z"
+  "savedAt": "2026-07-03T19:09:01.857Z"
 }
