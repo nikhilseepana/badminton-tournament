@@ -1129,9 +1129,9 @@
           "id": 1,
           "teamAId": 2,
           "teamBId": 5,
-          "scoreA": 1,
+          "scoreA": 21,
           "scoreB": 1,
-          "winnerId": null,
+          "winnerId": 2,
           "servingTeamId": 2,
           "round": 1,
           "court": 1
@@ -1236,11 +1236,11 @@
           "court": 2
         }
       ],
-      "selectedMatchId": 7,
+      "selectedMatchId": 1,
       "playerPool": [],
       "courts": 2,
       "format": "league"
     }
   ],
-  "savedAt": "2026-07-03T19:16:37.423Z"
+  "savedAt": "2026-07-03T19:18:27.608Z"
 }
