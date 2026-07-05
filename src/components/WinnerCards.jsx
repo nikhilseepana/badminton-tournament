@@ -24,6 +24,12 @@ export default function WinnerCards({
           )}
           <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(148,163,184,0.7)', textTransform: 'uppercase', letterSpacing: '3px', marginBottom: 6 }}>🥇 Champion</div>
           <div style={{ fontSize: 28, fontWeight: 900, color: '#dbe2f0', letterSpacing: '-0.5px', textShadow: '0 2px 16px rgba(90,110,156,0.5)' }}>{champion?.name}</div>
+          {tournament?.prizeMoney && (
+            <div style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(135deg,rgba(250,204,21,0.18),rgba(202,138,4,0.15))', border: '1px solid rgba(250,204,21,0.35)', borderRadius: 999, padding: '5px 16px' }}>
+              <span style={{ fontSize: 14 }}>💰</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: '#fde047', letterSpacing: 0.5 }}>{tournament.prizeMoney}</span>
+            </div>
+          )}
         </div>
         <div style={{ background: '#071530', padding: '10px 16px', display: 'flex', gap: 8 }}>
           <label style={{ flex: 1, textAlign: 'center', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.13)', borderRadius: 12, padding: '10px 0', fontSize: 12, fontWeight: 600, color: '#94a3b8', cursor: 'pointer', display: 'block' }}>
@@ -48,6 +54,12 @@ export default function WinnerCards({
           )}
           <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(148,163,184,0.55)', textTransform: 'uppercase', letterSpacing: '3px', marginBottom: 6 }}>Runner-up</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: '#cbd5e1', letterSpacing: '-0.3px', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>{runnerUp?.name || '–'}</div>
+          {tournament?.runnerUpPrize && (
+            <div style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(148,163,184,0.1)', border: '1px solid rgba(148,163,184,0.25)', borderRadius: 999, padding: '4px 14px' }}>
+              <span style={{ fontSize: 13 }}>💰</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8' }}>{tournament.runnerUpPrize}</span>
+            </div>
+          )}
         </div>
         <div style={{ background: '#0f1a28', padding: '10px 16px', display: 'flex', gap: 8 }}>
           <label style={{ flex: 1, textAlign: 'center', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '9px 0', fontSize: 12, fontWeight: 600, color: '#64748b', cursor: 'pointer', display: 'block' }}>

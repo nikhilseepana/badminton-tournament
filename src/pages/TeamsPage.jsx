@@ -310,6 +310,23 @@ export default function TeamsPage() {
           </span>
         </Flex>
 
+        <Flex align="center" gap="small" wrap="wrap" style={{ marginBottom: 10 }}>
+          <span style={{ fontSize: 12, color: '#64748b', fontWeight: 700 }}>🏆 Prize</span>
+          <Input
+            placeholder="e.g. ₹5000"
+            value={tournament.prizeMoney || ''}
+            onChange={(e) => update((t) => ({ ...t, prizeMoney: e.target.value }))}
+            style={{ width: 110 }} size="small"
+          />
+          <span style={{ fontSize: 12, color: '#64748b', fontWeight: 700 }}>🥈 Runner-up</span>
+          <Input
+            placeholder="e.g. ₹2000"
+            value={tournament.runnerUpPrize || ''}
+            onChange={(e) => update((t) => ({ ...t, runnerUpPrize: e.target.value }))}
+            style={{ width: 110 }} size="small"
+          />
+        </Flex>
+
         <button
           onClick={handleGenerateFixtures}
           disabled={teams.length < 2}
