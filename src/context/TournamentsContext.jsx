@@ -3,6 +3,7 @@ import { createTournament, getNextTournamentId } from '../utils/helpers';
 import {
   isSupabaseConfigured,
   saveRemoteTournaments,
+  loadRemoteTournaments,
 } from '../lib/remoteStore';
 
 function migrateRemoveDefault(list) {
@@ -91,6 +92,26 @@ export function TournamentsProvider({ children }) {
       showStatus('⚠️ Supabase not configured (local mode)');
       return;
     }
+    // Load from Supabase on startup and merge with localStorage
+    showStatus('⏳ Loading...');
+    setSyncing(true);
+    loadRemoteTournaments().then((result) => {
+      setSyncing(false);
+      if (result.ok && result.tournaments.length > 0) {
+        setTournaments(result.tournaments);
+        try {
+          localStorage.setItem(LOCAL_KEY, JSON.stringify(result.tournaments));
+        } catch {}
+        showStatus('✅ Loaded');
+      } else if (!result.ok) {
+        showStatus(`❌ ${result.error}`);
+      } else {
+        // Supabase is empty — push local data up
+        const local = tournamentsRef.current;
+        if (local.length > 0) doPush(local);
+        else showStatus('');
+      }
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateTournament(id, updater) {
