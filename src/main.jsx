@@ -14,7 +14,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <ConfigProvider
         theme={{
           token: {
-            colorPrimary: '#3e4f7a',
+            colorPrimary: '#334155',
             borderRadius: 14,
             fontFamily: "'Nunito Sans', 'Avenir Next', 'SF Pro Display', 'Segoe UI', sans-serif",
             fontSize: 14,

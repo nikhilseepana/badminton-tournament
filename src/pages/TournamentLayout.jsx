@@ -5,6 +5,7 @@ import { useTournaments } from '../context/TournamentsContext';
 import { useTournamentData } from '../hooks/useTournamentData';
 import { isMatchComplete } from '../utils/scoring';
 import { getTournamentStatus } from '../utils/helpers';
+import { FiArrowLeft, FiAward, FiCalendar, FiUsers } from 'react-icons/fi';
 
 const { useBreakpoint } = Grid;
 
@@ -104,6 +105,17 @@ export default function TournamentLayout() {
     return <Navigate to={hasFixtures ? 'draw' : (status === 'upcoming' ? 'teams' : 'draw')} replace />;
   }
 
+  const completedMatches = matches.filter((m) => m.winnerId !== null).length;
+  const totalMatches = matches.length;
+  const progressPct = totalMatches > 0 ? Math.round((completedMatches / totalMatches) * 100) : 0;
+  const tabs = [
+    { key: 'teams', label: 'Teams', icon: FiUsers, to: `/t/${tournamentId}/teams` },
+    ...(hasFixtures ? [
+      { key: 'draw', label: 'Fixtures', icon: FiCalendar, to: `/t/${tournamentId}/draw` },
+      { key: 'table', label: 'Standings', icon: FiAward, to: `/t/${tournamentId}/table` },
+    ] : []),
+  ];
+
   // --- Tournament-scoped handlers ---
 
   function update(updater) {
@@ -118,9 +130,8 @@ export default function TournamentLayout() {
         const scoreA = Math.max(0, nextScoreA);
         const scoreB = Math.max(0, nextScoreB);
         const finished = isMatchComplete(scoreA, scoreB);
-        let nextServing = match.servingTeamId || match.teamAId;
-        if (scoreA === 0 && scoreB === 0) nextServing = match.teamAId;
-        else if (scoreA > match.scoreA) nextServing = match.teamAId;
+        let nextServing = match.servingTeamId;
+        if (scoreA > match.scoreA) nextServing = match.teamAId;
         else if (scoreB > match.scoreB) nextServing = match.teamBId;
         updatedMatch = { ...match, scoreA, scoreB, winnerId: finished ? (scoreA > scoreB ? match.teamAId : match.teamBId) : null, servingTeamId: nextServing };
         return updatedMatch;
@@ -143,7 +154,7 @@ export default function TournamentLayout() {
   function resetMatch(matchId) {
     update((t) => {
       const cleared = t.matches.map((m) =>
-        m.id === matchId ? { ...m, scoreA: 0, scoreB: 0, winnerId: null, servingTeamId: m.teamAId } : m
+        m.id === matchId ? { ...m, scoreA: 0, scoreB: 0, winnerId: null, servingTeamId: null } : m
       );
       const hasDeps = cleared.some((m) => m.teamAFrom === matchId || m.teamBFrom === matchId);
       if (hasDeps) {
@@ -217,39 +228,72 @@ export default function TournamentLayout() {
     <TournamentCtx.Provider value={ctx}>
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(160deg, #f6f5f1 0%, #f1f3f8 62%, #f5f7fc 100%)',
+        background: 'linear-gradient(180deg, #031329 0px, #08264f 160px, #f1f5f9 280px, #f8fafc 100%)',
         display: 'flex', flexDirection: 'column',
         fontFamily: "'Nunito Sans', 'Avenir Next', 'SF Pro Display', 'Segoe UI', sans-serif",
       }}>
-        {/* ── App-style header ── */}
+        {/* Tournament hero header */}
         <div style={{
           position: 'sticky', top: 0, zIndex: 30,
-          background: 'rgba(255,255,255,0.92)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          borderBottom: '1px solid rgba(100,116,139,0.16)',
-          height: 56, padding: '0 4px 0 8px',
-          display: 'flex', alignItems: 'center', gap: 4,
+          background: 'linear-gradient(180deg,#031329 0%, #08264f 100%)',
+          borderBottom: '1px solid rgba(71,85,105,0.22)',
+          padding: isMobile ? '8px 10px 10px' : '10px 14px 12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
         }}>
-          {/* Back — goes to draw if on score page, otherwise home */}
-          <button
-            onClick={() => pathname.endsWith('/score') ? navigate('draw') : navigate('/')}
-            style={{ width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', color: '#3e4f7a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, flexShrink: 0 }}
-            aria-label="Back"
-          >
-            ‹
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+            <button
+              onClick={() => pathname.endsWith('/score') ? navigate('draw') : navigate('/')}
+              style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', color: 'rgba(191,219,254,0.8)', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+              aria-label="Back"
+            >
+              <FiArrowLeft size={22} />
+            </button>
 
-          {/* Tournament name */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: 15, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.2px' }}>
-              {tournament.name}
-            </div>
-            <div style={{ fontSize: 11, color: '#6c7488', marginTop: 0 }}>
-              {teams.length} teams · {matches.filter(m => m.winnerId).length}/{matches.length} done
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 900, fontSize: isMobile ? 21 : 25, lineHeight: 1.05, color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.2px' }}>
+                {tournament.name}
+              </div>
             </div>
           </div>
 
+          <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ flex: 1, height: 8, borderRadius: 999, background: 'rgba(30,58,99,0.72)', overflow: 'hidden' }}>
+              <div style={{ width: `${progressPct}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#34d399 0%,#22c55e 100%)', boxShadow: '0 0 16px rgba(34,197,94,0.5)' }} />
+            </div>
+            <div style={{ minWidth: 84, textAlign: 'right', color: '#a5b4fc', fontSize: 12, fontWeight: 700 }}>
+              {completedMatches}/{totalMatches} played
+            </div>
+          </div>
+
+          <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const active = pathname.includes(`/${tab.key}`);
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => navigate(tab.to)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '8px 12px',
+                    borderRadius: 9,
+                    border: 'none',
+                    background: active ? 'linear-gradient(180deg,rgba(16,185,129,0.22),rgba(5,150,105,0.18))' : 'rgba(15,23,42,0.12)',
+                    color: active ? '#6ee7b7' : '#93aecf',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Icon size={14} /> {tab.label}
+                </button>
+              );
+            })}
+          </div>
 
         </div>
 

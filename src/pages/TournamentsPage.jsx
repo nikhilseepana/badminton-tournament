@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Input, Typography } from 'antd';
-import { FiArchive, FiBarChart2, FiChevronRight, FiEdit2, FiGitBranch, FiPlus, FiRefreshCw, FiSearch, FiShare2, FiTrash2, FiUser, FiUsers, FiX } from 'react-icons/fi';
+import { FiActivity, FiArchive, FiBarChart2, FiCheckCircle, FiChevronRight, FiEdit2, FiGitBranch, FiList, FiPlus, FiSearch, FiShare2, FiTrash2, FiUser, FiUsers, FiX } from 'react-icons/fi';
 import { useTournaments } from '../context/TournamentsContext';
 import { getTournamentStatus } from '../utils/helpers';
 
@@ -14,7 +14,7 @@ function BrandBadge({ size = 20, rounded = 12 }) {
         width: size,
         height: size,
         borderRadius: rounded,
-        background: 'linear-gradient(135deg,#5d6f9c,#3e4f7a)',
+        background: 'linear-gradient(135deg,#1d4b8f,#1e3a8a)',
         color: '#fff',
         display: 'flex',
         alignItems: 'center',
@@ -22,7 +22,7 @@ function BrandBadge({ size = 20, rounded = 12 }) {
         fontWeight: 900,
         fontSize: Math.max(10, Math.floor(size * 0.42)),
         letterSpacing: 0.4,
-        boxShadow: '0 6px 18px rgba(62,79,122,0.2)',
+        boxShadow: '0 8px 18px rgba(2,6,23,0.3)',
       }}
     >
       GT
@@ -36,16 +36,16 @@ function ProgressBar({ done, total }) {
     <div style={{ marginTop: 8 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
         <Text style={{ fontSize: 12, color: '#6b7280' }}>{done}/{total} matches played</Text>
-        <Text style={{ fontSize: 12, color: pct === 100 ? '#3e4f7a' : '#4d5f84', fontWeight: 700 }}>{pct}%</Text>
+        <Text style={{ fontSize: 12, color: pct === 100 ? '#166534' : '#475569', fontWeight: 700 }}>{pct}%</Text>
       </div>
-      <div style={{ height: 7, background: '#e5e9f2', borderRadius: 99, overflow: 'hidden' }}>
+      <div style={{ height: 7, background: '#e2e8f0', borderRadius: 99, overflow: 'hidden' }}>
         <div
           style={{
             height: '100%',
             width: `${pct}%`,
             background: pct === 100
-              ? 'linear-gradient(90deg,#6b82b1,#7f96c4)'
-              : 'linear-gradient(90deg,#6077a8,#9aaed0)',
+              ? 'linear-gradient(90deg,#22c55e,#16a34a)'
+              : 'linear-gradient(90deg,#64748b,#94a3b8)',
             borderRadius: 99,
             transition: 'width 0.35s ease',
           }}
@@ -57,10 +57,10 @@ function ProgressBar({ done, total }) {
 
 function StatusPill({ status }) {
   const map = {
-    upcoming: { label: 'Upcoming', bg: '#eef1f7', color: '#435575' },
-    ongoing: { label: 'Live', bg: '#eef1f7', color: '#3e4f7a' },
-    completed: { label: 'Completed', bg: '#edf1fb', color: '#425b8d' },
-    archived: { label: 'Archived', bg: '#f2f4f8', color: '#6b7280' },
+    upcoming: { label: 'Upcoming', bg: '#f1f5f9', color: '#475569' },
+    ongoing: { label: 'Live', bg: '#ecfdf3', color: '#166534' },
+    completed: { label: 'Completed', bg: '#ecfdf3', color: '#166534' },
+    archived: { label: 'Archived', bg: '#f1f5f9', color: '#64748b' },
   };
   const cfg = map[status] || map.upcoming;
   return (
@@ -116,6 +116,10 @@ export default function TournamentsPage() {
     () => tournaments.reduce((sum, t) => sum + (t.matches?.filter((m) => m.winnerId !== null).length || 0), 0),
     [tournaments]
   );
+  const pendingJoinRequests = useMemo(
+    () => tournaments.reduce((sum, t) => sum + ((t.teamRequests || []).filter((r) => r.status === 'pending').length || 0), 0),
+    [tournaments]
+  );
 
   function copyShareLink(e, id) {
     e.stopPropagation();
@@ -140,7 +144,7 @@ export default function TournamentsPage() {
       style={{
         minHeight: '100vh',
         background:
-          'radial-gradient(1200px 460px at -8% -10%, #eef1f7 0%, transparent 70%), radial-gradient(900px 320px at 100% 0%, #eff2f8 0%, transparent 65%), linear-gradient(170deg, #f6f5f1 0%, #f1f3f8 54%, #f5f7fc 100%)',
+          'linear-gradient(180deg, #031329 0px, #08264f 160px, #f1f5f9 260px, #f8fafc 100%)',
         fontFamily: "'Nunito Sans', 'Avenir Next', 'SF Pro Display', 'Segoe UI', sans-serif",
         paddingBottom: 28,
       }}
@@ -150,10 +154,8 @@ export default function TournamentsPage() {
           position: 'sticky',
           top: 0,
           zIndex: 40,
-          background: 'rgba(255,255,255,0.92)',
-          backdropFilter: 'blur(16px) saturate(160%)',
-          WebkitBackdropFilter: 'blur(16px) saturate(160%)',
-          borderBottom: '1px solid rgba(100,116,139,0.16)',
+          background: 'linear-gradient(180deg, #031329 0%, #08264f 100%)',
+          borderBottom: '1px solid rgba(71,85,105,0.22)',
           padding: '0 16px',
           height: 62,
           display: 'flex',
@@ -164,8 +166,17 @@ export default function TournamentsPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <BrandBadge size={40} rounded={13} />
           <div>
-            <div style={{ fontWeight: 900, fontSize: 21, color: '#14242a', letterSpacing: -0.35 }}>GameTribe</div>
-            <div style={{ fontSize: 11, color: '#7a8398', marginTop: -2 }}>Play. Score. Celebrate.</div>
+            <div
+              style={{
+                fontWeight: 900,
+                fontSize: 21,
+                letterSpacing: -0.35,
+                color: '#e2e8f0',
+              }}
+            >
+              GameTribe
+            </div>
+            <div style={{ fontSize: 11, color: '#93aecf', marginTop: -2 }}>Play. Score. Celebrate.</div>
           </div>
         </div>
 
@@ -174,11 +185,13 @@ export default function TournamentsPage() {
             width: 40,
             height: 40,
             borderRadius: '50%',
-            background: 'linear-gradient(135deg,#8a90a6,#717a95)',
+            border: '1px solid rgba(148,163,184,0.35)',
+            background: 'linear-gradient(180deg, rgba(15,23,42,0.25), rgba(30,41,59,0.28))',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(2,6,23,0.25)',
           }}
         >
           <FiUser size={16} color="#fff" />
@@ -190,9 +203,9 @@ export default function TournamentsPage() {
           style={{
             borderRadius: 18,
             padding: '14px 14px 12px',
-            background: 'linear-gradient(145deg, rgba(255,255,255,0.9), rgba(247,250,248,0.9))',
-            border: '1px solid #dfe4ef',
-            boxShadow: '0 8px 22px rgba(100,116,139,0.08)',
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.96), rgba(248,250,252,0.96))',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 10px 24px rgba(15,23,42,0.08)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
@@ -216,13 +229,13 @@ export default function TournamentsPage() {
                 borderRadius: 14,
                 border: 'none',
                 background: showCreate
-                  ? 'linear-gradient(135deg,#eef1f7,#eaedf6)'
-                  : 'linear-gradient(135deg,#4f5f8f,#3e4f7a)',
-                color: showCreate ? '#3e4f7a' : '#fff',
+                  ? 'linear-gradient(135deg,#e2e8f0,#cbd5e1)'
+                  : 'linear-gradient(135deg,#22c55e,#16a34a)',
+                color: showCreate ? '#334155' : '#f0fdf4',
                 fontWeight: 800,
                 fontSize: 15,
                 cursor: 'pointer',
-                boxShadow: showCreate ? 'none' : '0 10px 20px rgba(62,79,122,0.2)',
+                boxShadow: showCreate ? 'none' : '0 10px 20px rgba(22,163,74,0.24)',
               }}
             >
               {showCreate ? <FiX size={15} /> : <FiPlus size={15} />}
@@ -230,12 +243,27 @@ export default function TournamentsPage() {
             </button>
           </div>
 
+          <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 8 }}>
+            <div style={{ borderRadius: 12, padding: '8px 10px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#475569', fontSize: 11, fontWeight: 700 }}><FiActivity size={12} /> Active</div>
+              <div style={{ marginTop: 2, fontSize: 16, fontWeight: 900, color: '#1f2937' }}>{liveTournaments.length}</div>
+            </div>
+            <div style={{ borderRadius: 12, padding: '8px 10px', background: '#ecfdf3', border: '1px solid #bbf7d0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#15803d', fontSize: 11, fontWeight: 700 }}><FiCheckCircle size={12} /> Completed</div>
+              <div style={{ marginTop: 2, fontSize: 16, fontWeight: 900, color: '#166534' }}>{doneMatches}</div>
+            </div>
+            <div style={{ borderRadius: 12, padding: '8px 10px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+              <div style={{ color: '#a16207', fontSize: 11, fontWeight: 700 }}>Pending</div>
+              <div style={{ marginTop: 2, fontSize: 16, fontWeight: 900, color: '#854d0e' }}>{pendingJoinRequests}</div>
+            </div>
+          </div>
+
           <div style={{ marginTop: 10 }}>
             <Input
               value={searchForm}
               onChange={(e) => setSearchForm(e.target.value)}
               placeholder={showArchived ? 'Search archived tournaments' : 'Search tournaments'}
-              prefix={<FiSearch size={14} color="#8a96ad" />}
+              prefix={<FiSearch size={14} color="#94a3b8" />}
               allowClear
               style={{ borderRadius: 12 }}
             />
@@ -251,14 +279,14 @@ export default function TournamentsPage() {
                   padding: '5px 12px',
                   borderRadius: 999,
                   background: syncStatus.startsWith('✅')
-                    ? '#edf1fb'
+                    ? '#ecfdf3'
                     : syncStatus.startsWith('⏳')
-                      ? '#eef1f7'
+                      ? '#f1f5f9'
                       : '#f8efef',
                   color: syncStatus.startsWith('✅')
-                    ? '#425b8d'
+                    ? '#166534'
                     : syncStatus.startsWith('⏳')
-                      ? '#3e4f7a'
+                      ? '#334155'
                       : '#9b4c4c',
                 }}
               >
@@ -296,7 +324,7 @@ export default function TournamentsPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {[
-                { v: 'league', Icon: FiRefreshCw, name: 'League', desc: 'Round robin style' },
+                { v: 'league', Icon: FiList, name: 'League', desc: 'Round robin style' },
                 { v: 'knockout', Icon: FiGitBranch, name: 'Knockout', desc: 'Single elimination' },
               ].map(({ v, Icon, name, desc }) => {
                 const selected = formatForm === v;
@@ -310,21 +338,21 @@ export default function TournamentsPage() {
                       borderRadius: 12,
                       cursor: 'pointer',
                       background: selected ? '#eef1f7' : '#fbfcff',
-                      border: selected ? '2px solid #3e4f7a' : '1px solid #e4e8f1',
+                      border: selected ? '2px solid #334155' : '1px solid #e2e8f0',
                       textAlign: 'center',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6, color: selected ? '#3e4f7a' : '#6077a8' }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6, color: selected ? '#334155' : '#64748b' }}>
                       <Icon size={18} />
                     </div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: selected ? '#3e4f7a' : '#374151' }}>{name}</div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: selected ? '#334155' : '#374151' }}>{name}</div>
                     <div style={{ fontSize: 11, color: '#7d8597' }}>{desc}</div>
                   </button>
                 );
               })}
             </div>
 
-            <Button type="primary" htmlType="submit" block size="large" style={{ borderRadius: 12, fontWeight: 800, height: 46 }}>
+                  <Button type="primary" htmlType="submit" block size="large" style={{ borderRadius: 12, fontWeight: 800, height: 46, background: 'linear-gradient(135deg,#334155,#1f2937)', border: 'none' }}>
               Create Tournament
             </Button>
           </form>
@@ -356,12 +384,12 @@ export default function TournamentsPage() {
                     marginTop: 14,
                     padding: '11px 24px',
                     borderRadius: 12,
-                    background: '#3e4f7a',
                     color: '#fff',
                     border: 'none',
                     fontWeight: 800,
                     fontSize: 14,
                     cursor: 'pointer',
+                    background: 'linear-gradient(135deg,#334155,#1f2937)',
                   }}
                 >
                   Create First Tournament
@@ -373,14 +401,14 @@ export default function TournamentsPage() {
           {filteredTournaments.map((t) => {
             const done = t.matches.filter((m) => m.winnerId !== null).length;
             const total = t.matches.length;
-            const fmt = t.format || 'league';
-            const FormatIcon = fmt === 'knockout' ? FiGitBranch : fmt === 'groups' ? FiUsers : FiRefreshCw;
-            const fmtLabel = fmt === 'knockout' ? 'Knockout' : fmt === 'groups' ? `Groups ×${t.numGroups ?? 2}` : 'League';
-            const fmtBg = fmt === 'knockout'
-              ? 'linear-gradient(135deg,#4f628d,#3e4f7a)'
-              : fmt === 'groups'
-                ? 'linear-gradient(135deg,#4f628d,#3e4f7a)'
-                : 'linear-gradient(135deg,#51638f,#3e4f7a)';
+            const rawFormat = t.format || 'league';
+            const baseFormat = rawFormat === 'groups' ? (t.parentFormat || 'league') : rawFormat;
+            const hasGroups = rawFormat === 'groups';
+            const FormatIcon = baseFormat === 'knockout' ? FiGitBranch : FiList;
+            const fmtLabel = baseFormat === 'knockout' ? 'Knockout' : 'League';
+            const fmtBg = baseFormat === 'knockout'
+              ? 'linear-gradient(135deg,#1f2937,#111827)'
+              : 'linear-gradient(135deg,#475569,#334155)';
             const status = getTournamentStatus(t);
             const pendingRequests = (t.teamRequests || []).filter((r) => r.status === 'pending').length;
             const effectiveStatus = status;
@@ -390,10 +418,10 @@ export default function TournamentsPage() {
               <div
                 key={t.id}
                 style={{
-                  background: 'rgba(255,255,255,0.95)',
+                  background: 'linear-gradient(180deg,#ffffff,#fbfdff)',
                   borderRadius: 20,
-                  border: '1px solid #e1e5ef',
-                  boxShadow: '0 10px 24px rgba(100,116,139,0.08)',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 10px 22px rgba(15,23,42,0.08)',
                   overflow: 'hidden',
                 }}
               >
@@ -434,6 +462,24 @@ export default function TournamentsPage() {
                           <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 600 }}>
                             {fmtLabel} · {t.teams.length} teams
                           </span>
+                          {hasGroups && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 800,
+                                color: '#475569',
+                                background: '#f1f5f9',
+                                border: '1px solid #cbd5e1',
+                                padding: '2px 8px',
+                                borderRadius: 999,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              <FiUsers size={11} /> Groups ×{t.numGroups ?? 2}
+                            </span>
+                          )}
                           <StatusPill status={effectiveStatus} />
                           {pendingRequests > 0 && (
                             <span
@@ -467,8 +513,8 @@ export default function TournamentsPage() {
                           height: 32,
                           borderRadius: 9,
                           border: 'none',
-                          background: canEditSettings ? '#f3f5fa' : '#f5f6f8',
-                          color: canEditSettings ? '#7d8597' : '#b1b6c2',
+                          background: canEditSettings ? '#f1f5f9' : '#f8fafc',
+                          color: canEditSettings ? '#475569' : '#94a3b8',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -490,8 +536,8 @@ export default function TournamentsPage() {
                             height: 32,
                             borderRadius: 9,
                             border: 'none',
-                            background: '#edf1fb',
-                            color: '#3e4f7a',
+                            background: '#f1f5f9',
+                            color: '#334155',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -512,8 +558,8 @@ export default function TournamentsPage() {
                             height: 32,
                             borderRadius: 9,
                             border: 'none',
-                            background: '#f3f5fa',
-                            color: '#7d8597',
+                            background: '#f1f5f9',
+                            color: '#64748b',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -558,9 +604,9 @@ export default function TournamentsPage() {
                       border: 'none',
                       borderRight: '1px solid #edf1f6',
                       background: 'transparent',
-                      color: '#3e4f7a',
+                      color: '#334155',
                       fontWeight: 800,
-                      fontSize: 16,
+                      fontSize: 14,
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -577,10 +623,10 @@ export default function TournamentsPage() {
                       padding: '13px 0',
                       border: 'none',
                       borderRight: '1px solid #edf1f6',
-                      background: 'transparent',
-                      color: '#62737a',
+                      background: 'linear-gradient(180deg,#f8fafc,#f1f5f9)',
+                      color: '#475569',
                       fontWeight: 700,
-                      fontSize: 16,
+                      fontSize: 14,
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -596,10 +642,10 @@ export default function TournamentsPage() {
                     style={{
                       padding: '13px 0',
                       border: 'none',
-                      background: copiedId === t.id ? '#edf1fb' : 'transparent',
-                      color: copiedId === t.id ? '#425b8d' : '#62737a',
+                      background: copiedId === t.id ? '#e2e8f0' : 'linear-gradient(180deg,#f8fafc,#f1f5f9)',
+                      color: copiedId === t.id ? '#334155' : '#475569',
                       fontWeight: 700,
-                      fontSize: 16,
+                      fontSize: 14,
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
