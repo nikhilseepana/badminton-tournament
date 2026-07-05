@@ -14,11 +14,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <ConfigProvider
         theme={{
           token: {
-            colorPrimary: '#2563eb',
+            colorPrimary: '#3e4f7a',
             borderRadius: 14,
-            fontFamily: "'SF Pro Display', 'Avenir Next', 'Segoe UI', sans-serif",
+            fontFamily: "'Nunito Sans', 'Avenir Next', 'SF Pro Display', 'Segoe UI', sans-serif",
             fontSize: 14,
             colorBgContainer: '#ffffff',
+            colorText: '#1f2937',
           },
         }}
       >

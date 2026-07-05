@@ -5,7 +5,7 @@ import { useTournament } from './TournamentLayout';
 import { useTournaments } from '../context/TournamentsContext';
 import { getNextTeamId, getTournamentStatus } from '../utils/helpers';
 import { buildSchedule, buildKnockout, buildGroups } from '../utils/schedule';
-import { FiLock, FiCheck, FiX } from 'react-icons/fi';
+import { FiLock, FiCheck, FiTrash2, FiX } from 'react-icons/fi';
 
 const { Text, Title } = Typography;
 
@@ -33,7 +33,7 @@ export default function TeamsPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const status = getTournamentStatus(tournament);
-  const isLocked = status !== 'setup';
+  const isLocked = status !== 'upcoming';
   const playerPool = tournament.playerPool || [];
 
   function handleP1Change(val) {
@@ -83,16 +83,45 @@ export default function TeamsPage() {
     });
   }
 
-  function handleGenerateFixtures() {
-    if (tournament.matches.length > 0) return;
+  function handleDeleteTeam(teamId) {
     update((t) => {
-      if (t.format === 'groups') {
-        const { matches, groupAssignments } = buildGroups(t.teams, t.numGroups ?? 2, t.courts ?? 2, t.groupFormat ?? 'league');
-        return { ...t, matches, groupAssignments, selectedMatchId: null };
-      }
+      const nextTeams = (t.teams || []).filter((tm) => tm.id !== teamId);
+      const nextGroupAssignments = Object.fromEntries(
+        Object.entries(t.groupAssignments || {}).filter(([id]) => Number(id) !== Number(teamId))
+      );
+
+      // Reset fixtures when roster changes to avoid stale references.
       return {
         ...t,
-        matches: (t.format || 'league') === 'knockout'
+        teams: nextTeams,
+        groupAssignments: nextGroupAssignments,
+        matches: [],
+        selectedMatchId: null,
+      };
+    });
+  }
+
+  function handleGenerateFixtures() {
+    if (tournament.matches.length > 0) {
+      navigate('draw');
+      return;
+    }
+    update((t) => {
+      if (t.format === 'groups') {
+        const { matches, groupAssignments } = buildGroups(
+          t.teams,
+          t.numGroups ?? 2,
+          t.courts ?? 2,
+          t.groupFormat ?? 'league'
+        );
+        return { ...t, matches, groupAssignments, selectedMatchId: null };
+      }
+
+      const effectiveFormat = t.format || 'league';
+
+      return {
+        ...t,
+        matches: effectiveFormat === 'knockout'
           ? buildKnockout(t.teams, t.courts ?? 2)
           : buildSchedule(t.teams, t.courts ?? 2),
         selectedMatchId: null,
@@ -107,7 +136,7 @@ export default function TeamsPage() {
   }
 
   function handleUpdateFormat(f) {
-    // Always save the base format (league/knockout); keep groups active if already set
+    // Save base format and keep groups toggle independent.
     update((t) => ({
       ...t,
       parentFormat: f,
@@ -118,7 +147,7 @@ export default function TeamsPage() {
   }
 
   function handleUpdateNumGroups(n) {
-    // 0 = no groups → revert to parentFormat; 2/3/4 = groups stage
+    // 0 = no groups, 2/3/4 = grouped stage then playoffs.
     update((t) => ({
       ...t,
       format: n > 0 ? 'groups' : (t.parentFormat || 'league'),
@@ -131,18 +160,18 @@ export default function TeamsPage() {
   return (
     <Card
       styles={{ body: { padding: '14px 16px' } }}
-      style={{ border: '1px solid rgba(37,99,235,0.1)', boxShadow: '0 4px 20px rgba(37,99,235,0.08)', borderRadius: 18 }}
+      style={{ border: '1px solid rgba(63,98,91,0.12)', boxShadow: '0 4px 20px rgba(31,70,60,0.08)', borderRadius: 18 }}
     >
       <Flex justify="space-between" align="center" style={{ marginBottom: !isLocked ? 8 : 10 }}>
         <Title level={4} style={{ margin: 0 }}>Teams</Title>
         <Tag>{teams.length} registered</Tag>
       </Flex>
 
-      {/* ── Format + groups config (setup only) ── */}
+      {/* ── Format config (upcoming only) ── */}
       {!isLocked && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '10px 12px', marginBottom: 10 }}>
+        <div style={{ background: '#fbfcff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '10px 12px', marginBottom: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Format</div>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+          <div style={{ display: 'flex', gap: 6 }}>
             {[{ v: 'league', icon: '🔄', label: 'League' }, { v: 'knockout', icon: '🥊', label: 'Knockout' }].map(({ v, icon, label }) => {
               const baseFormat = tournament.format === 'groups'
                 ? (tournament.parentFormat || 'league')
@@ -151,37 +180,14 @@ export default function TeamsPage() {
               return (
                 <button key={v} onClick={() => handleUpdateFormat(v)} style={{
                   flex: 1, padding: '7px 4px', borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s',
-                  border: active ? '2px solid #2563eb' : '1.5px solid #e2e8f0',
-                  background: active ? '#eff6ff' : '#fff',
-                  color: active ? '#1d4ed8' : '#374151',
+                  border: active ? '2px solid #3e4f7a' : '1.5px solid #e2e8f0',
+                  background: active ? '#eef1f7' : '#fff',
+                  color: active ? '#3e4f7a' : '#374151',
                   fontWeight: 700, fontSize: 12, textAlign: 'center',
                 }}>{icon} {label}</button>
               );
             })}
           </div>
-          {(tournament.format === 'league' || tournament.format === 'groups' || tournament.format === 'knockout' || !tournament.format) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>👥 Groups:</span>
-              <div style={{ display: 'flex', gap: 6 }}>
-                {[{ n: 0, label: '—' }, { n: 2, label: '2' }, { n: 3, label: '3' }, { n: 4, label: '4' }].map(({ n, label }) => {
-                  const cur = tournament.format === 'groups' ? (tournament.numGroups ?? 2) : 0;
-                  const active = cur === n;
-                  return (
-                    <button key={n} onClick={() => handleUpdateNumGroups(n)} style={{
-                      minWidth: 32, height: 30, borderRadius: 8, cursor: 'pointer', padding: '0 8px',
-                      border: active ? '2px solid #7c3aed' : '1.5px solid #e2e8f0',
-                      background: active ? '#7c3aed' : '#fff',
-                      color: active ? '#fff' : '#374151',
-                      fontWeight: 700, fontSize: 13,
-                    }}>{label}</button>
-                  );
-                })}
-              </div>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>
-                {tournament.format === 'groups' ? `${tournament.numGroups ?? 2} groups → playoffs` : 'no groups'}
-              </span>
-            </div>
-          )}
         </div>
       )}
 
@@ -189,17 +195,17 @@ export default function TeamsPage() {
       {isLocked && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
-          background: status === 'completed' ? 'linear-gradient(135deg,#f0fdf4,#dcfce7)' : 'linear-gradient(135deg,#fff7ed,#ffedd5)',
-          border: `1px solid ${status === 'completed' ? '#86efac' : '#fdba74'}`,
+          background: status === 'completed' ? 'linear-gradient(135deg,#eef7f2,#e4f2ec)' : 'linear-gradient(135deg,#f8f1e8,#f4ebe0)',
+          border: `1px solid ${status === 'completed' ? '#b9dccc' : '#d8c4ac'}`,
           borderRadius: 12, padding: '10px 14px', marginBottom: 12,
         }}>
-          <FiLock size={16} color={status === 'completed' ? '#16a34a' : '#ea580c'} style={{ flexShrink: 0 }} />
+          <FiLock size={16} color={status === 'completed' ? '#3e4f7a' : '#9a6b3f'} style={{ flexShrink: 0 }} />
           <div>
-            <div style={{ fontWeight: 700, fontSize: 13, color: status === 'completed' ? '#15803d' : '#c2410c' }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: status === 'completed' ? '#3e4f7a' : '#8b633d' }}>
               {status === 'completed' ? 'Tournament completed' : 'Tournament in progress'}
             </div>
-            <div style={{ fontSize: 11, color: status === 'completed' ? '#16a34a' : '#ea580c', marginTop: 1 }}>
-              Teams are locked — editing is disabled once fixtures are generated
+            <div style={{ fontSize: 11, color: status === 'completed' ? '#4f5f8f' : '#9a6b3f', marginTop: 1 }}>
+              Teams are locked — editing is disabled once matches start
             </div>
           </div>
         </div>
@@ -209,7 +215,7 @@ export default function TeamsPage() {
       {!isLocked && (
         <>
       {/* Add team */}
-      <form onSubmit={handleAddTeam} style={{ background: '#fff', border: '1px solid #e0e7ff', borderRadius: 12, padding: '10px 12px', marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
+      <form onSubmit={handleAddTeam} style={{ background: '#fff', border: '1px solid #e2e6f0', borderRadius: 12, padding: '10px 12px', marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
         <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Add Team</div>
         <div style={{ display: 'flex', gap: 6 }}>
           <Input value={p1} placeholder="Player 1" onChange={(e) => handleP1Change(e.target.value)} size="small" style={{ flex: 1 }} />
@@ -230,8 +236,8 @@ export default function TeamsPage() {
       </form>
 
       {/* Player pool */}
-      <div style={{ background: 'linear-gradient(135deg,#eff6ff,#f0fdf4)', border: '1px solid #bfdbfe', borderRadius: 12, padding: '10px 12px', marginBottom: 10 }}>
-        <Text strong style={{ fontSize: 12, color: '#2563eb', display: 'block', marginBottom: 6 }}>⚡ Quick-add players → auto teams</Text>
+      <div style={{ background: 'linear-gradient(135deg,#eef1f7,#f5f7fc)', border: '1px solid #d8e0ee', borderRadius: 12, padding: '10px 12px', marginBottom: 10 }}>
+        <Text strong style={{ fontSize: 12, color: '#3e4f7a', display: 'block', marginBottom: 6 }}>⚡ Quick-add players → auto teams</Text>
         <form onSubmit={(e) => { e.preventDefault(); handleAddPlayer(); }} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
           <Input value={playerPoolForm} placeholder="Player name" onChange={(e) => setPlayerPoolForm(e.target.value)} style={{ flex: 1 }} size="small" />
           <Button type="primary" htmlType="submit" size="small">Add</Button>
@@ -254,23 +260,80 @@ export default function TeamsPage() {
         )}
       </div>
 
-      <Flex align="center" gap="small" wrap="wrap" style={{ marginBottom: 10 }}>
-        <Button
-          onClick={handleGenerateFixtures}
-          disabled={teams.length < 2 || tournament.matches.length > 0}
-          type="primary" ghost
-        >
-          Generate Fixtures
-        </Button>
-        <Flex align="center" gap={4}>
+      <div style={{ marginBottom: 10, border: '1px solid #dfe5f1', background: '#f8faff', borderRadius: 12, padding: '10px 12px' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          Fixture Settings
+        </div>
+        <Flex align="center" gap="small" wrap="wrap" style={{ marginBottom: 8 }}>
+          <span style={{ fontSize: 12, color: '#64748b', fontWeight: 700 }}>Courts</span>
           <Input
             type="number" min={1} max={10}
             value={tournament.courts ?? 2}
             onChange={(e) => handleUpdateCourts(e.target.value)}
-            style={{ width: 54 }} size="small"
+            style={{ width: 64 }} size="small"
           />
+          <span style={{ fontSize: 11, color: '#94a3b8' }}>
+            {tournament.format === 'groups' ? `with ${tournament.numGroups ?? 2} groups` : 'single table / bracket'}
+          </span>
         </Flex>
-      </Flex>
+
+        <Flex align="center" gap="small" wrap="wrap" style={{ marginBottom: 10 }}>
+          <span style={{ fontSize: 12, color: '#64748b', fontWeight: 700 }}>Groups</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[{ n: 0, label: '—' }, { n: 2, label: '2' }, { n: 3, label: '3' }, { n: 4, label: '4' }].map(({ n, label }) => {
+              const cur = tournament.format === 'groups' ? (tournament.numGroups ?? 2) : 0;
+              const active = cur === n;
+              return (
+                <button
+                  key={n}
+                  onClick={() => handleUpdateNumGroups(n)}
+                  style={{
+                    minWidth: 32,
+                    height: 30,
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    padding: '0 8px',
+                    border: active ? '2px solid #596c95' : '1.5px solid #d7deeb',
+                    background: active ? '#596c95' : '#fff',
+                    color: active ? '#fff' : '#374151',
+                    fontWeight: 700,
+                    fontSize: 13,
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <span style={{ fontSize: 11, color: '#94a3b8' }}>
+            {tournament.format === 'groups' ? `${tournament.numGroups ?? 2} groups → playoffs` : 'no groups'}
+          </span>
+        </Flex>
+
+        <button
+          onClick={handleGenerateFixtures}
+          disabled={teams.length < 2}
+          style={{
+            width: '100%',
+            height: 40,
+            borderRadius: 10,
+            border: 'none',
+            fontWeight: 800,
+            fontSize: 14,
+            letterSpacing: 0.2,
+            cursor: teams.length < 2 ? 'not-allowed' : 'pointer',
+            background: teams.length < 2
+              ? '#e5e7eb'
+              : 'linear-gradient(135deg,#3e4f7a,#51638f)',
+            color: teams.length < 2 ? '#9ca3af' : '#ffffff',
+            boxShadow: teams.length < 2
+              ? 'none'
+              : '0 8px 20px rgba(62,79,122,0.28)',
+          }}
+        >
+          {tournament.matches.length > 0 ? 'Open Draw' : 'Generate Fixtures'}
+        </button>
+      </div>
         </>
       )}
 
@@ -281,7 +344,7 @@ export default function TeamsPage() {
             🙋 Pending Requests ({(tournament.teamRequests || []).filter(r => r.status === 'pending').length})
           </div>
           {(tournament.teamRequests || []).filter(r => r.status === 'pending').map(req => (
-            <div key={req.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 10, background: '#fffbeb', border: '1px solid #fde68a', marginBottom: 6 }}>
+            <div key={req.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 10, background: '#f8f4ea', border: '1px solid #e5d5bc', marginBottom: 6 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{req.teamName}</div>
                 <div style={{ fontSize: 11, color: '#64748b' }}>{req.player1} · {req.player2}</div>
@@ -289,7 +352,7 @@ export default function TeamsPage() {
               <Button
                 size="small" type="primary"
                 icon={<FiCheck size={12} />}
-                style={{ background: '#16a34a', borderColor: '#16a34a' }}
+                style={{ background: '#3e4f7a', borderColor: '#3e4f7a' }}
                 onClick={() => {
                   const allPlayers = teams.flatMap(t => (t.players || []).map(p => p.toLowerCase()));
                   if (allPlayers.includes(req.player1.toLowerCase()) || allPlayers.includes(req.player2.toLowerCase())) {
@@ -308,9 +371,34 @@ export default function TeamsPage() {
       {/* Team list — always visible, read-only */}
       <Space direction="vertical" style={{ width: '100%' }}>
         {teams.map((team) => (
-          <div key={team.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 12, border: '1px solid #d4deea', background: '#fbfdff' }}>
-            <Text strong>{team.name}</Text>
-            <Text type="secondary" style={{ fontSize: 12 }}>{team.players[0]} & {team.players[1]}</Text>
+          <div key={team.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 12, border: '1px solid #dfe4ee', background: '#fbfcff' }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <Text strong>{team.name}</Text>
+              <div>
+                <Text type="secondary" style={{ fontSize: 12 }}>{team.players[0]} & {team.players[1]}</Text>
+              </div>
+            </div>
+            {!isLocked && (
+              <button
+                onClick={() => handleDeleteTeam(team.id)}
+                title="Delete team"
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  border: 'none',
+                  background: '#faf2f2',
+                  color: '#d27575',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                <FiTrash2 size={13} />
+              </button>
+            )}
           </div>
         ))}
       </Space>

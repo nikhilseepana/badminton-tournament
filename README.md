@@ -1,70 +1,83 @@
-# Getting Started with Create React App
+# GameTribe
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Badminton tournament manager with cross-device sync using Supabase.
 
-## Available Scripts
+## Tech
 
-In the project directory, you can run:
+- React + Vite
+- Supabase (`public.tournaments` table)
+- Netlify deployment
 
-### `npm start`
+## Local Setup
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+1. Install dependencies:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+```bash
+npm install
+```
 
-### `npm test`
+2. Configure env vars in `.env.local`:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+VITE_SUPABASE_URL=your-project-url
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+# optional fallback name:
+# VITE_SUPABASE_ANON_KEY=your-anon-key
+```
 
-### `npm run build`
+3. Start dev server:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+npm run dev
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Supabase Setup
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Run the schema in Supabase SQL Editor:
 
-### `npm run eject`
+- [supabase/gametribe_tournaments.sql](supabase/gametribe_tournaments.sql)
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+This creates relational tables:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- `public.tournaments`
+- `public.tournament_teams`
+- `public.tournament_matches`
+- `public.tournament_team_requests`
+- `public.tournament_group_assignments`
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Plus RLS policies, indexes, and updated_at triggers for production usage.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Netlify Deployment
 
-## Learn More
+1. Push repo to GitHub.
+2. In Netlify: Add new site from Git.
+3. Build settings:
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+4. Add environment variables in Netlify Site Settings:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`)
+5. Deploy.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+`netlify.toml` is already included with the correct build and publish config.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Notes
 
-### Code Splitting
+- Local cache is still used for instant load (`localStorage`), but Supabase is the source of truth.
+- If Supabase env vars are missing, the app runs in local-only mode.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Troubleshooting
 
-### Analyzing the Bundle Size
+If you see:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+`Could not find the table 'public.tournaments' in the schema cache`
 
-### Making a Progressive Web App
+1. Open Supabase SQL Editor.
+2. Run [supabase/gametribe_tournaments.sql](supabase/gametribe_tournaments.sql).
+3. Retry the app.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+If schema cache still lags, run:
 
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```sql
+select pg_notify('pgrst', 'reload schema');
+```

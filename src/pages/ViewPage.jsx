@@ -1,19 +1,35 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { GiShuttlecock } from 'react-icons/gi';
 import { FiRefreshCw, FiUsers, FiCalendar, FiBarChart2, FiUserPlus } from 'react-icons/fi';
+import {
+  appendTeamRequestRemote,
+  isSupabaseConfigured,
+  loadRemoteTournaments,
+} from '../lib/remoteStore';
 
-const GH_API = 'https://api.github.com';
-const REPO = 'nikhilseepana/badminton-tournament';
-const GIST_BOOTSTRAP = `${GH_API}/repos/${REPO}/contents/data/gist-id.json`;
-const GIST_FILE = 'tournaments.json';
-const GIST_ID_KEY = 'badtour_gist_id';
+const LOCAL_KEY = 'gametribe_data';
+const LEGACY_LOCAL_KEY = 'badtour_data';
 
-function b64dec(s) {
-  const raw = atob(s.replace(/\s/g, ''));
-  const bytes = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-  return new TextDecoder().decode(bytes);
+function BrandBadge({ size = 18, rounded = 10 }) {
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: rounded,
+        background: 'linear-gradient(135deg,#5d6f9c,#3e4f7a)',
+        color: '#fff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 900,
+        fontSize: Math.max(10, Math.floor(size * 0.42)),
+        letterSpacing: 0.4,
+      }}
+    >
+      GT
+    </div>
+  );
 }
 
 function getGroupLabel(idx) {
@@ -54,36 +70,37 @@ export default function ViewPage() {
 
   const loadData = useCallback(async () => {
     try {
-      // Try localStorage first (same device as owner)
-      const saved = localStorage.getItem('badtour_data');
+      // Seed from localStorage for instant render, then refresh from remote.
+      const saved = localStorage.getItem(LOCAL_KEY) || localStorage.getItem(LEGACY_LOCAL_KEY);
       if (saved) {
-        const all = JSON.parse(saved);
-        const t = all.find(x => x.id === tournamentId);
-        if (t) { setTournament(t); setLastUpdated(new Date()); setLoading(false); return; }
+        try {
+          const all = JSON.parse(saved);
+          const t = all.find(x => x.id === tournamentId);
+          if (t) { setTournament(t); setLastUpdated(new Date()); setLoading(false); }
+        } catch {}
       }
 
-      // Fetch from public Gist (cross-device sharing)
-      let gistId = localStorage.getItem(GIST_ID_KEY);
-      if (!gistId) {
-        const r = await fetch(GIST_BOOTSTRAP);
-        if (r.ok) {
-          const file = await r.json();
-          try { ({ gistId } = JSON.parse(b64dec(file.content))); } catch {}
-        }
+      if (!isSupabaseConfigured) {
+        setError('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.');
+        setLoading(false);
+        return;
       }
-      if (!gistId) { setError('Could not find tournament storage. Share URL may be invalid.'); setLoading(false); return; }
 
-      const res = await fetch(`${GH_API}/gists/${gistId}`);
-      if (!res.ok) { setError('Could not load data. The tournament may not be publicly shared yet.'); setLoading(false); return; }
-      const gist = await res.json();
-      const raw = gist?.files?.[GIST_FILE]?.content;
-      if (!raw) { setError('No data found.'); setLoading(false); return; }
-      const parsed = JSON.parse(raw);
-      const all = Array.isArray(parsed) ? parsed : (parsed.tournaments || []);
+      const remote = await loadRemoteTournaments();
+      if (!remote.ok) {
+        setError(`Could not load data: ${remote.error}`);
+        setLoading(false);
+        return;
+      }
+
+      const all = remote.tournaments;
       const t = all.find(x => x.id === tournamentId);
       if (!t) { setError('Tournament not found.'); setLoading(false); return; }
+
+      try { localStorage.setItem(LOCAL_KEY, JSON.stringify(all)); } catch {}
       setTournament(t);
       setLastUpdated(new Date());
+      setError(null);
       setLoading(false);
     } catch (e) {
       setError(`Failed to load: ${e.message}`);
@@ -98,9 +115,9 @@ export default function ViewPage() {
   }, [loadData]);
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg,#eff6ff,#f8faff,#f0fdf4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg,#f6f5f1,#f1f3f8,#f5f7fc)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
       <div style={{ animation: 'spin 1s linear infinite', transformOrigin: 'center' }}>
-        <GiShuttlecock size={36} color="#2563eb" />
+        <BrandBadge size={36} rounded={12} />
       </div>
       <div style={{ color: '#64748b', fontSize: 14, fontWeight: 600 }}>Loading tournament…</div>
       <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
@@ -108,11 +125,11 @@ export default function ViewPage() {
   );
 
   if (error) return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg,#eff6ff,#f8faff,#f0fdf4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, padding: 24 }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg,#f6f5f1,#f1f3f8,#f5f7fc)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, padding: 24 }}>
       <div style={{ fontSize: 48 }}>⚠️</div>
       <div style={{ color: '#0f172a', fontSize: 16, fontWeight: 700 }}>Could not load tournament</div>
       <div style={{ color: '#64748b', fontSize: 13, textAlign: 'center', maxWidth: 300 }}>{error}</div>
-      <Link to="/" style={{ marginTop: 8, padding: '10px 20px', background: '#2563eb', color: '#fff', borderRadius: 12, fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>Back to Home</Link>
+      <Link to="/" style={{ marginTop: 8, padding: '10px 20px', background: '#3e4f7a', color: '#fff', borderRadius: 12, fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>Back to Home</Link>
     </div>
   );
 
@@ -124,10 +141,10 @@ export default function ViewPage() {
   const fmtLabel = fmt === 'knockout' ? 'Knockout' : fmt === 'groups' ? `Groups ×${numGroups}` : 'League';
   const statusLabel = matches.length === 0 ? 'Upcoming' : doneCount === matches.length ? 'Completed' : 'Live 🔴';
   const statusStyle = matches.length === 0
-    ? { bg: '#eff6ff', color: '#2563eb' }
+    ? { bg: '#eef1f7', color: '#3e4f7a' }
     : doneCount === matches.length
-      ? { bg: '#f0fdf4', color: '#16a34a' }
-      : { bg: '#fff7ed', color: '#ea580c' };
+      ? { bg: '#eef2ff', color: '#3e4f7a' }
+      : { bg: '#fff7ed', color: '#3e4f7a' };
 
   // Standings data
   const globalStandings = computeStandings(teams, matches);
@@ -183,15 +200,38 @@ export default function ViewPage() {
     e.preventDefault();
     const p1 = joinP1.trim(), p2 = joinP2.trim(), tName = joinTeam.trim() || `${p1} & ${p2}`;
     if (!p1 || !p2) return;
-    // Try writing to localStorage (same device as admin)
+
+    if (isSupabaseConfigured) {
+      (async () => {
+        const request = {
+          id: Date.now(),
+          player1: p1,
+          player2: p2,
+          teamName: tName,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        };
+
+        const saved = await appendTeamRequestRemote(tournamentId, request);
+        if (saved.ok) {
+          setJoinResult('sent');
+          loadData();
+          return;
+        }
+        setJoinResult('link');
+      })();
+      return;
+    }
+
+    // Fallback (local mode only)
     try {
-      const saved = localStorage.getItem('badtour_data');
+      const saved = localStorage.getItem(LOCAL_KEY) || localStorage.getItem(LEGACY_LOCAL_KEY);
       if (saved) {
         const all = JSON.parse(saved);
         const idx = all.findIndex(t => t.id === tournamentId);
         if (idx !== -1) {
           all[idx] = { ...all[idx], teamRequests: [...(all[idx].teamRequests || []), { id: Date.now(), player1: p1, player2: p2, teamName: tName, status: 'pending', createdAt: new Date().toISOString() }] };
-          localStorage.setItem('badtour_data', JSON.stringify(all));
+          localStorage.setItem(LOCAL_KEY, JSON.stringify(all));
           setJoinResult('sent');
           return;
         }
@@ -205,18 +245,16 @@ export default function ViewPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg,#eff6ff,#f8faff,#f0fdf4)', fontFamily: "'SF Pro Display','Avenir Next','Segoe UI',sans-serif", paddingBottom: 32 }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg,#f6f5f1,#f1f3f8,#f5f7fc)', fontFamily: "'Nunito Sans','Avenir Next','SF Pro Display','Segoe UI',sans-serif", paddingBottom: 32 }}>
       {/* Header */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 30, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(37,99,235,0.1)', padding: '0 16px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 30, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(63,98,91,0.12)', padding: '0 16px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <div style={{ width: 32, height: 32, borderRadius: 10, background: 'linear-gradient(135deg,#2563eb,#1d4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <GiShuttlecock size={18} color="#fff" />
-          </div>
-          <span style={{ fontWeight: 800, fontSize: 17, color: '#0f172a', letterSpacing: '-0.3px' }}>BadTour</span>
+          <BrandBadge size={32} rounded={10} />
+          <span style={{ fontWeight: 800, fontSize: 17, color: '#0f172a', letterSpacing: '-0.3px' }}>GameTribe</span>
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: 10, color: '#94a3b8' }}>{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : ''}</span>
-          <button onClick={loadData} style={{ width: 30, height: 30, borderRadius: 8, border: 'none', background: 'transparent', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <button onClick={loadData} style={{ width: 30, height: 30, borderRadius: 8, border: 'none', background: 'transparent', color: '#3e4f7a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <FiRefreshCw size={14} />
           </button>
         </div>
@@ -226,7 +264,7 @@ export default function ViewPage() {
       <div style={{ padding: '20px 16px 0' }}>
         <div style={{ background: 'white', borderRadius: 18, padding: '16px', border: '1px solid #e8eef6', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <div style={{ width: 42, height: 42, borderRadius: 12, background: fmt === 'knockout' ? 'linear-gradient(135deg,#ff6b35,#f43f5e)' : fmt === 'groups' ? 'linear-gradient(135deg,#7c3aed,#a855f7)' : 'linear-gradient(135deg,#2563eb,#06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: fmt === 'knockout' ? 'linear-gradient(135deg,#4f628d,#3e4f7a)' : fmt === 'groups' ? 'linear-gradient(135deg,#3e4f7a,#4f628d)' : 'linear-gradient(135deg,#3e4f7a,#5a6e9c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
               {fmtIcon}
             </div>
             <div style={{ flex: 1 }}>
@@ -241,10 +279,10 @@ export default function ViewPage() {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                 <span style={{ fontSize: 11, color: '#94a3b8' }}>{doneCount}/{matches.length} matches played</span>
-                <span style={{ fontSize: 11, color: doneCount === matches.length ? '#16a34a' : '#2563eb', fontWeight: 700 }}>{Math.round(doneCount / matches.length * 100)}%</span>
+                <span style={{ fontSize: 11, color: doneCount === matches.length ? '#3e4f7a' : '#3e4f7a', fontWeight: 700 }}>{Math.round(doneCount / matches.length * 100)}%</span>
               </div>
               <div style={{ height: 5, background: '#e2e8f0', borderRadius: 99, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${Math.round(doneCount / matches.length * 100)}%`, background: doneCount === matches.length ? 'linear-gradient(90deg,#16a34a,#22c55e)' : 'linear-gradient(90deg,#2563eb,#60a5fa)', borderRadius: 99, transition: 'width 0.4s' }} />
+                <div style={{ height: '100%', width: `${Math.round(doneCount / matches.length * 100)}%`, background: doneCount === matches.length ? 'linear-gradient(90deg,#3e4f7a,#5a6e9c)' : 'linear-gradient(90deg,#3e4f7a,#5a6e9c)', borderRadius: 99, transition: 'width 0.4s' }} />
               </div>
             </div>
           )}
@@ -258,13 +296,13 @@ export default function ViewPage() {
           <div style={{ borderRadius: 20, overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.18)', marginBottom: 14 }}>
             {/* Champion banner */}
             <div style={{ background: 'linear-gradient(160deg,#1a3a6b 0%,#0d2247 55%,#071530 100%)', padding: '24px 20px 20px', textAlign: 'center', position: 'relative' }}>
-              <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(255,215,0,0.12) 1px, transparent 1px)', backgroundSize: '22px 22px', pointerEvents: 'none' }} />
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,215,0,0.65)', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 10 }}>{name}</div>
-              <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 12, filter: 'drop-shadow(0 0 18px rgba(251,191,36,0.7))' }}>🏆</div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,215,0,0.55)', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 4 }}>🥇 Champion</div>
-              <div style={{ fontSize: 26, fontWeight: 900, color: '#fbbf24', letterSpacing: '-0.5px', textShadow: '0 2px 16px rgba(251,191,36,0.5)' }}>{champion.name}</div>
+              <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(148,163,184,0.12) 1px, transparent 1px)', backgroundSize: '22px 22px', pointerEvents: 'none' }} />
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(148,163,184,0.75)', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 10 }}>{name}</div>
+              <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 12, filter: 'drop-shadow(0 0 18px rgba(90,110,156,0.7))' }}>🏆</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(148,163,184,0.7)', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 4 }}>🥇 Champion</div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: '#dbe2f0', letterSpacing: '-0.5px', textShadow: '0 2px 16px rgba(90,110,156,0.5)' }}>{champion.name}</div>
               {finalMatch && (
-                <div style={{ marginTop: 8, fontSize: 13, color: 'rgba(255,215,0,0.5)', fontWeight: 600 }}>
+                <div style={{ marginTop: 8, fontSize: 13, color: 'rgba(148,163,184,0.6)', fontWeight: 600 }}>
                   Final: {teamLookup.get(finalMatch.teamAId)?.name} {finalMatch.scoreA} – {finalMatch.scoreB} {teamLookup.get(finalMatch.teamBId)?.name}
                 </div>
               )}
@@ -301,7 +339,7 @@ export default function ViewPage() {
         {/* Tabs */}
         <div style={{ display: 'flex', background: 'white', borderRadius: 14, padding: 4, border: '1px solid #e8eef6', marginBottom: 14, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
           {TABS.map(({ key, icon, label }) => (
-            <button key={key} onClick={() => setTab(key)} style={{ flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', background: tab === key ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : 'transparent', color: tab === key ? '#fff' : '#64748b', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, transition: 'all 0.15s' }}>
+            <button key={key} onClick={() => setTab(key)} style={{ flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', background: tab === key ? 'linear-gradient(135deg,#3e4f7a,#2f3f66)' : 'transparent', color: tab === key ? '#fff' : '#64748b', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, transition: 'all 0.15s' }}>
               {icon} {label}
             </button>
           ))}
@@ -315,7 +353,7 @@ export default function ViewPage() {
             {/* Groups format */}
             {fmt === 'groups' && roundGroups?.map(({ label: gLabel, rounds }) => (
               <div key={gLabel} style={{ background: 'white', borderRadius: 16, border: '1px solid #e8eef6', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                <div style={{ padding: '10px 14px', background: 'linear-gradient(135deg,#7c3aed,#a855f7)', color: '#fff', fontWeight: 700, fontSize: 13 }}>{gLabel}</div>
+                <div style={{ padding: '10px 14px', background: 'linear-gradient(135deg,#3e4f7a,#4f628d)', color: '#fff', fontWeight: 700, fontSize: 13 }}>{gLabel}</div>
                 <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {rounds.map(({ round, matches: rm }) => (
                     <div key={round}>
@@ -329,8 +367,8 @@ export default function ViewPage() {
 
             {/* Playoffs */}
             {fmt === 'groups' && playoffMatches.length > 0 && (
-              <div style={{ background: 'white', borderRadius: 16, border: '1px solid #fde68a', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                <div style={{ padding: '10px 14px', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', fontWeight: 700, fontSize: 13 }}>🏆 Playoffs</div>
+              <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dfe5f1', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                <div style={{ padding: '10px 14px', background: 'linear-gradient(135deg,#5a6e9c,#4f628d)', color: '#fff', fontWeight: 700, fontSize: 13 }}>🏆 Playoffs</div>
                 <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {[...new Set(playoffMatches.map(m => m.round))].sort((a, b) => a - b).map(round => (
                     <div key={round}>
@@ -361,7 +399,7 @@ export default function ViewPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {fmt === 'groups' && groupStandings?.map(({ label, teams: gts }) => (
               <div key={label} style={{ background: 'white', borderRadius: 16, border: '1px solid #e8eef6', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                <div style={{ padding: '10px 14px', background: 'linear-gradient(135deg,#7c3aed,#a855f7)', color: '#fff', fontWeight: 700, fontSize: 13 }}>{label}</div>
+                <div style={{ padding: '10px 14px', background: 'linear-gradient(135deg,#3e4f7a,#4f628d)', color: '#fff', fontWeight: 700, fontSize: 13 }}>{label}</div>
                 <StandingsTable rows={gts} />
               </div>
             ))}
@@ -382,12 +420,12 @@ export default function ViewPage() {
               const gIdx = groupAssignments[t.id] != null ? Number(groupAssignments[t.id]) : null;
               return (
                 <div key={t.id} style={{ padding: '12px 16px', borderBottom: i < teams.length - 1 ? '1px solid #f1f5f9' : 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg,#2563eb,#06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 12, flexShrink: 0 }}>{i + 1}</div>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg,#3e4f7a,#5a6e9c)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 12, flexShrink: 0 }}>{i + 1}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{t.name}</div>
                     {t.players?.length > 0 && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{t.players.join(' · ')}</div>}
                   </div>
-                  {gIdx != null && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: '#f3e8ff', color: '#7c3aed' }}>{getGroupLabel(gIdx)}</span>}
+                  {gIdx != null && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: '#eef1f7', color: '#3e4f7a' }}>{getGroupLabel(gIdx)}</span>}
                 </div>
               );
             })}
@@ -402,9 +440,9 @@ export default function ViewPage() {
             {joinResult === 'sent' ? (
               <div style={{ textAlign: 'center', padding: '24px 0' }}>
                 <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#16a34a', marginBottom: 4 }}>Request sent!</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#3e4f7a', marginBottom: 4 }}>Request sent!</div>
                 <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>The admin will see your request and approve it shortly.</div>
-                <button onClick={() => { setJoinResult(null); setJoinP1(''); setJoinP2(''); setJoinTeam(''); setJoinEdited(false); }} style={{ padding: '8px 20px', borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#2563eb', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>New Request</button>
+                <button onClick={() => { setJoinResult(null); setJoinP1(''); setJoinP2(''); setJoinTeam(''); setJoinEdited(false); }} style={{ padding: '8px 20px', borderRadius: 10, background: '#eef1f7', border: '1px solid #d8dfec', color: '#3e4f7a', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>New Request</button>
               </div>
             ) : joinResult === 'link' ? (
               <div style={{ textAlign: 'center', padding: '16px 0' }}>
@@ -412,7 +450,7 @@ export default function ViewPage() {
                 <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 4 }}>Share this link with the admin</div>
                 <div style={{ fontSize: 11, color: '#64748b', marginBottom: 12 }}>Admin opens the link → your request appears instantly for approval.</div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 10px', marginBottom: 10, wordBreak: 'break-all', fontSize: 10, color: '#475569', textAlign: 'left' }}>{joinLink}</div>
-                <button onClick={() => { navigator.clipboard.writeText(joinLink).catch(() => {}); }} style={{ padding: '8px 20px', borderRadius: 10, background: '#2563eb', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 13, marginRight: 8 }}>📋 Copy Link</button>
+                <button onClick={() => { navigator.clipboard.writeText(joinLink).catch(() => {}); }} style={{ padding: '8px 20px', borderRadius: 10, background: '#3e4f7a', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 13, marginRight: 8 }}>📋 Copy Link</button>
                 <button onClick={() => { setJoinResult(null); setJoinP1(''); setJoinP2(''); setJoinTeam(''); setJoinEdited(false); }} style={{ padding: '8px 16px', borderRadius: 10, background: '#f1f5f9', border: 'none', color: '#475569', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>Back</button>
               </div>
             ) : (
@@ -422,7 +460,7 @@ export default function ViewPage() {
                   <input value={joinP2} onChange={e => handleJoinP2(e.target.value)} placeholder="Player 2 name" required style={{ flex: 1, padding: '9px 12px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none' }} />
                 </div>
                 <input value={joinTeam} onChange={e => { setJoinTeam(e.target.value); setJoinEdited(true); }} placeholder="Team name (auto-filled)" style={{ padding: '9px 12px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none', color: '#374151' }} />
-                <button type="submit" disabled={!joinP1.trim() || !joinP2.trim()} style={{ padding: '11px', borderRadius: 12, background: joinP1.trim() && joinP2.trim() ? '#2563eb' : '#e2e8f0', border: 'none', color: joinP1.trim() && joinP2.trim() ? '#fff' : '#94a3b8', fontWeight: 700, fontSize: 14, cursor: joinP1.trim() && joinP2.trim() ? 'pointer' : 'not-allowed' }}>
+                <button type="submit" disabled={!joinP1.trim() || !joinP2.trim()} style={{ padding: '11px', borderRadius: 12, background: joinP1.trim() && joinP2.trim() ? '#3e4f7a' : '#e2e8f0', border: 'none', color: joinP1.trim() && joinP2.trim() ? '#fff' : '#94a3b8', fontWeight: 700, fontSize: 14, cursor: joinP1.trim() && joinP2.trim() ? 'pointer' : 'not-allowed' }}>
                   Send Request
                 </button>
               </form>
@@ -439,17 +477,17 @@ function MatchRow({ m, teamLookup }) {
   const tB = teamLookup.get(m.teamBId);
   const done = m.winnerId !== null;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '8px 10px', borderRadius: 10, background: done ? '#f0fdf4' : '#f8fafc', border: `1px solid ${done ? '#86efac' : '#e2e8f0'}` }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '8px 10px', borderRadius: 10, background: done ? '#eef2ff' : '#f8fafc', border: `1px solid ${done ? '#c7d2fe' : '#e2e8f0'}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <span style={{ fontSize: 10, padding: '0 5px', borderRadius: 6, background: '#dbeafe', color: '#1d4ed8', fontWeight: 700 }}>C{m.court}</span>
+        <span style={{ fontSize: 10, padding: '0 5px', borderRadius: 6, background: '#eef1f7', color: '#2f3f66', fontWeight: 700 }}>C{m.court}</span>
         <span style={{ fontSize: 10, color: '#94a3b8' }}>{done ? '✅ done' : 'pending'}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-        <span style={{ flex: 1, fontWeight: m.winnerId === m.teamAId ? 800 : 600, fontSize: 14, color: m.winnerId === m.teamAId ? '#16a34a' : '#0f172a' }}>{tA?.name ?? 'TBD'}</span>
+        <span style={{ flex: 1, fontWeight: m.winnerId === m.teamAId ? 800 : 600, fontSize: 14, color: m.winnerId === m.teamAId ? '#3e4f7a' : '#0f172a' }}>{tA?.name ?? 'TBD'}</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: done ? '#475569' : '#94a3b8', minWidth: 36, textAlign: 'center' }}>
           {done ? `${m.scoreA} – ${m.scoreB}` : 'vs'}
         </span>
-        <span style={{ flex: 1, fontWeight: m.winnerId === m.teamBId ? 800 : 600, fontSize: 14, color: m.winnerId === m.teamBId ? '#16a34a' : '#0f172a', textAlign: 'right' }}>{tB?.name ?? 'TBD'}</span>
+        <span style={{ flex: 1, fontWeight: m.winnerId === m.teamBId ? 800 : 600, fontSize: 14, color: m.winnerId === m.teamBId ? '#3e4f7a' : '#0f172a', textAlign: 'right' }}>{tB?.name ?? 'TBD'}</span>
       </div>
     </div>
   );
@@ -466,13 +504,13 @@ function StandingsTable({ rows }) {
         <span style={{ width: 30, textAlign: 'center' }}>Pts</span>
       </div>
       {rows.map((r, i) => (
-        <div key={r.team.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', borderBottom: i < rows.length - 1 ? '1px solid #f8fafc' : 'none', background: i < 2 ? (i === 0 ? '#fffbeb' : '#f0fdf4') : 'white' }}>
-          <span style={{ width: 20, fontWeight: 700, fontSize: 12, color: i === 0 ? '#d97706' : i === 1 ? '#16a34a' : '#94a3b8' }}>{i + 1}</span>
+        <div key={r.team.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', borderBottom: i < rows.length - 1 ? '1px solid #f8fafc' : 'none', background: i < 2 ? (i === 0 ? '#f9fafb' : '#eef2ff') : 'white' }}>
+          <span style={{ width: 20, fontWeight: 700, fontSize: 12, color: i === 0 ? '#4f628d' : i === 1 ? '#3e4f7a' : '#94a3b8' }}>{i + 1}</span>
           <span style={{ flex: 1, fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{r.team.name}</span>
           <span style={{ width: 30, textAlign: 'center', fontSize: 13, color: '#475569' }}>{r.played}</span>
-          <span style={{ width: 30, textAlign: 'center', fontSize: 13, color: '#16a34a', fontWeight: 700 }}>{r.won}</span>
+          <span style={{ width: 30, textAlign: 'center', fontSize: 13, color: '#3e4f7a', fontWeight: 700 }}>{r.won}</span>
           <span style={{ width: 30, textAlign: 'center', fontSize: 13, color: '#ef4444' }}>{r.lost}</span>
-          <span style={{ width: 30, textAlign: 'center', fontSize: 14, fontWeight: 800, color: '#2563eb' }}>{r.won * 2}</span>
+          <span style={{ width: 30, textAlign: 'center', fontSize: 14, fontWeight: 800, color: '#3e4f7a' }}>{r.won * 2}</span>
         </div>
       ))}
     </div>

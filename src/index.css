@@ -1,5 +1,17 @@
 *, *::before, *::after { box-sizing: border-box; }
 
+:root {
+  --bg-0: #f8fafc;
+  --bg-1: #f5f7fb;
+  --bg-2: #f2f5fa;
+  --surface: #ffffff;
+  --text-strong: #1f2937;
+  --text-muted: #6b7280;
+  --border-soft: #e5e7eb;
+  --primary: #3e4f7a;
+  --primary-weak: #eef1f7;
+}
+
 html {
   /* Prevent font scale on iOS rotation */
   -webkit-text-size-adjust: 100%;
@@ -9,14 +21,16 @@ html {
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Roboto',
-    'Helvetica Neue', sans-serif;
+  font-family: 'Nunito Sans', 'Avenir Next', 'SF Pro Display', 'Segoe UI', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* Prevent pull-to-refresh on mobile when scrolling content */
   overscroll-behavior: none;
-  /* Nice background */
-  background: #eff6ff;
+  color: var(--text-strong);
+  background:
+    radial-gradient(1200px 420px at 10% -10%, #eef1f7 0%, transparent 65%),
+    radial-gradient(900px 340px at 100% 0%, #f1f4fa 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 48%, var(--bg-2) 100%);
 }
 
 /* Remove tap flash on mobile */
@@ -24,7 +38,7 @@ body {
 
 /* Better focus outlines for accessibility */
 :focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 

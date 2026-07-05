@@ -63,7 +63,7 @@ export default function TablePage() {
           <>
             {groupStandings.map(({ groupIdx, label, teams: gTeams }) => (
               <div key={groupIdx} style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 6 }}>{label}</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#3e4f7a', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 6 }}>{label}</div>
                 <Table
                   dataSource={gTeams.map((e, i) => ({ ...e, key: e.id, rank: i + 1 }))}
                   columns={[
@@ -80,8 +80,8 @@ export default function TablePage() {
             ))}
             {playoffMatches.length > 0 && (
               <div style={{ marginTop: 4 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>Playoffs</div>
-                <BracketChart matches={playoffMatches} teamLookup={teamLookup} onOpenMatch={handleOpenMatch} accentColor="#b45309" />
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#3e4f7a', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>Playoffs</div>
+                <BracketChart matches={playoffMatches} teamLookup={teamLookup} onOpenMatch={handleOpenMatch} accentColor="#3e4f7a" />
               </div>
             )}
           </>
@@ -108,14 +108,14 @@ export default function TablePage() {
         {/* League playoff bracket */}
         {!isKnockout && !isGroups && playoffMatches.length > 0 && (
           <div style={{ marginTop: 16 }}>
-            <Text style={{ fontSize: 11, fontWeight: 700, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: 8 }}>
+            <Text style={{ fontSize: 11, fontWeight: 700, color: '#3e4f7a', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: 8 }}>
               Playoffs
             </Text>
             <BracketChart
               matches={playoffMatches}
               teamLookup={teamLookup}
               onOpenMatch={handleOpenMatch}
-              accentColor="#b45309"
+              accentColor="#3e4f7a"
             />
           </div>
         )}

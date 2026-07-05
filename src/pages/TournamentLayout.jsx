@@ -97,10 +97,11 @@ export default function TournamentLayout() {
 
   if (!tournament) return <Navigate to="/" replace />;
 
-  // Smart redirect: on index route, go to teams if setup, draw if ongoing/completed
+  // Smart redirect: if fixtures already exist, land on draw; otherwise teams.
   const status = getTournamentStatus(tournament);
+  const hasFixtures = Array.isArray(tournament.matches) && tournament.matches.length > 0;
   if (pathname === `/t/${id}` || pathname === `/t/${id}/`) {
-    return <Navigate to={status === 'setup' ? 'teams' : 'draw'} replace />;
+    return <Navigate to={hasFixtures ? 'draw' : (status === 'upcoming' ? 'teams' : 'draw')} replace />;
   }
 
   // --- Tournament-scoped handlers ---
@@ -216,24 +217,24 @@ export default function TournamentLayout() {
     <TournamentCtx.Provider value={ctx}>
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(160deg, #eff6ff 0%, #f8faff 60%, #f0fdf4 100%)',
+        background: 'linear-gradient(160deg, #f6f5f1 0%, #f1f3f8 62%, #f5f7fc 100%)',
         display: 'flex', flexDirection: 'column',
-        fontFamily: "'SF Pro Display', 'Avenir Next', 'Segoe UI', sans-serif",
+        fontFamily: "'Nunito Sans', 'Avenir Next', 'SF Pro Display', 'Segoe UI', sans-serif",
       }}>
         {/* ── App-style header ── */}
         <div style={{
           position: 'sticky', top: 0, zIndex: 30,
-          background: 'rgba(255,255,255,0.9)',
+          background: 'rgba(255,255,255,0.92)',
           backdropFilter: 'blur(20px) saturate(180%)',
           WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          borderBottom: '1px solid rgba(37,99,235,0.1)',
+          borderBottom: '1px solid rgba(100,116,139,0.16)',
           height: 56, padding: '0 4px 0 8px',
           display: 'flex', alignItems: 'center', gap: 4,
         }}>
           {/* Back — goes to draw if on score page, otherwise home */}
           <button
             onClick={() => pathname.endsWith('/score') ? navigate('draw') : navigate('/')}
-            style={{ width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, flexShrink: 0 }}
+            style={{ width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', color: '#3e4f7a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, flexShrink: 0 }}
             aria-label="Back"
           >
             ‹
@@ -244,7 +245,7 @@ export default function TournamentLayout() {
             <div style={{ fontWeight: 800, fontSize: 15, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.2px' }}>
               {tournament.name}
             </div>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 0 }}>
+            <div style={{ fontSize: 11, color: '#6c7488', marginTop: 0 }}>
               {teams.length} teams · {matches.filter(m => m.winnerId).length}/{matches.length} done
             </div>
           </div>

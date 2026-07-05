@@ -4,22 +4,6 @@ export function getGroupLabel(idx) {
   return `Group ${String.fromCharCode(65 + idx)}`; // A, B, C...
 }
 
-export const GH_DATA = 'https://api.github.com/repos/nikhilseepana/badminton-tournament/contents/data';
-
-export function b64enc(str) {
-  let bin = '';
-  const b = new TextEncoder().encode(str);
-  for (let i = 0; i < b.length; i++) bin += String.fromCharCode(b[i]);
-  return btoa(bin);
-}
-
-export function b64dec(s) {
-  const raw = atob(s.replace(/\n/g, ''));
-  const bytes = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-  return new TextDecoder().decode(bytes);
-}
-
 export function getHeadToHeadWinner(teamAId, teamBId, matches) {
   const direct = matches.find((m) => {
     const p1 = m.teamAId === teamAId && m.teamBId === teamBId;
@@ -39,13 +23,22 @@ export function getNextTournamentId(tournaments) {
 
 /**
  * Derives tournament status from data — never stored, always computed.
- *   'setup'     → no fixtures generated yet, teams can still be edited
- *   'ongoing'   → fixtures exist and at least one score/result recorded
+ *   'upcoming'  → before the first match starts (fixtures may already exist)
+ *   'ongoing'   → once any match has started and tournament is not finished
  *   'completed' → every match has a winner
+ *   'archived'  → moved to history
  */
 export function getTournamentStatus(tournament) {
-  const { matches = [] } = tournament;
-  if (matches.length === 0) return 'setup';
+  if (tournament?.archived) return 'archived';
+
+  const { matches = [] } = tournament || {};
+  if (matches.length === 0) return 'upcoming';
+
+  const hasStarted = matches.some(
+    (m) => m.winnerId !== null || Number(m.scoreA || 0) > 0 || Number(m.scoreB || 0) > 0
+  );
+
+  if (!hasStarted) return 'upcoming';
   if (matches.every((m) => m.winnerId !== null)) return 'completed';
   return 'ongoing';
 }
@@ -60,6 +53,7 @@ export function createTournament(id, name, teams = [], courts = 2, format = 'lea
     playerPool: [],
     courts,
     format,
+    updatedAt: new Date().toISOString(),
     ...(format === 'groups' ? { numGroups, groupFormat } : {}),
   };
 }

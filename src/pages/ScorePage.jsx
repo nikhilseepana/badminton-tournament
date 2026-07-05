@@ -118,7 +118,7 @@ export default function ScorePage() {
                   : 'In progress'}
               </Text>
               {selectedMatch.scoreA === 20 && selectedMatch.scoreB === 20 && (
-                <Tag color="green">Golden Point: next point wins</Tag>
+                <Tag color="geekblue">Golden Point: next point wins</Tag>
               )}
             </Flex>
           </Space>

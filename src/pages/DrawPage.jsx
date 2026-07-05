@@ -19,8 +19,8 @@ function MatchCard({ match, teamLookup, onOpen }) {
       style={{
         display: 'flex', flexDirection: 'column', gap: 3,
         padding: '10px 12px', borderRadius: 12,
-        border: match.winnerId ? '1px solid #86efac' : isTbd ? '1px dashed #d1d5db' : '1px solid #d4deea',
-        background: match.winnerId ? '#f0fdf4' : isTbd ? '#f9fafb' : '#fcfdff',
+        border: match.winnerId ? '1px solid #c7d2fe' : isTbd ? '1px dashed #d1d5db' : '1px solid #d4deea',
+        background: match.winnerId ? '#eef2ff' : isTbd ? '#f9fafb' : '#fcfdff',
         opacity: isTbd ? 0.65 : 1, cursor: isTbd ? 'default' : 'pointer',
       }}
     >
@@ -31,11 +31,11 @@ function MatchCard({ match, teamLookup, onOpen }) {
         </Text>
       </Flex>
       <Flex align="center" gap={8} style={{ marginTop: 4 }}>
-        <Text strong style={{ fontSize: 15, flex: 1, color: isTbd ? '#9ca3af' : match.winnerId === match.teamAId ? '#16a34a' : undefined }}>{nameA}</Text>
+        <Text strong style={{ fontSize: 15, flex: 1, color: isTbd ? '#9ca3af' : match.winnerId === match.teamAId ? '#3e4f7a' : undefined }}>{nameA}</Text>
         <Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>
           {match.scoreA > 0 || match.scoreB > 0 ? `${match.scoreA} – ${match.scoreB}` : 'vs'}
         </Text>
-        <Text strong style={{ fontSize: 15, flex: 1, textAlign: 'right', color: isTbd ? '#9ca3af' : match.winnerId === match.teamBId ? '#16a34a' : undefined }}>{nameB}</Text>
+        <Text strong style={{ fontSize: 15, flex: 1, textAlign: 'right', color: isTbd ? '#9ca3af' : match.winnerId === match.teamBId ? '#3e4f7a' : undefined }}>{nameB}</Text>
       </Flex>
     </div>
   );
@@ -72,7 +72,7 @@ export default function DrawPage() {
           <Flex gap="small" align="center">
             <Text type="secondary" style={{ fontSize: 11 }}>{tournament.courts ?? 2} courts</Text>
             <Tag>{fixturesDone} / {matches.length} done</Tag>
-            <button onClick={() => navigate(`/t/${tournament.id}/table`)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, border: 'none', background: 'linear-gradient(135deg,#7c3aed,#a855f7)', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+            <button onClick={() => navigate(`/t/${tournament.id}/table`)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, border: 'none', background: 'linear-gradient(135deg,#3e4f7a,#4f628d)', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
               <FiBarChart2 size={12} /> Stats
             </button>
           </Flex>
@@ -87,7 +87,7 @@ export default function DrawPage() {
           return (
             <div key={gi} style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.6px' }}>{getGroupLabel(gi)}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#3e4f7a', textTransform: 'uppercase', letterSpacing: '0.6px' }}>{getGroupLabel(gi)}</span>
                 <span style={{ fontSize: 10, color: '#94a3b8', background: '#f1f5f9', padding: '1px 6px', borderRadius: 6 }}>{gFmt === 'knockout' ? '🥊 Knockout' : '🔄 League'}</span>
                 <span style={{ fontSize: 10, color: '#94a3b8' }}>{doneCnt}/{gMatches.length} done</span>
               </div>
@@ -106,7 +106,7 @@ export default function DrawPage() {
         {/* Playoffs */}
         {hasPlayoffs && playoffRoundNums.map((r) => (
           <div key={r} style={{ marginBottom: 8 }}>
-            <Text style={{ fontSize: 11, fontWeight: 700, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: 4 }}>
+            <Text style={{ fontSize: 11, fontWeight: 700, color: '#3e4f7a', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: 4 }}>
               {r === maxPlayoffRound ? '🏆 Final' : 'Semifinals'}
             </Text>
             <Space direction="vertical" style={{ width: '100%' }}>
@@ -152,7 +152,7 @@ export default function DrawPage() {
           <Tag>{fixturesDone} / {matches.length} done</Tag>
           <button
             onClick={() => navigate(`/t/${tournament.id}/table`)}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, border: 'none', background: 'linear-gradient(135deg,#2563eb,#06b6d4)', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, border: 'none', background: 'linear-gradient(135deg,#3e4f7a,#5a6e9c)', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}
           >
             <FiBarChart2 size={12} /> Stats
           </button>
@@ -186,7 +186,7 @@ export default function DrawPage() {
 
             return (
               <div key={round} style={{ marginBottom: 8 }}>
-                <Text style={{ fontSize: 11, fontWeight: 700, color: isPlayoffRound ? '#b45309' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: 4 }}>
+                <Text style={{ fontSize: 11, fontWeight: 700, color: isPlayoffRound ? '#3e4f7a' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: 4 }}>
                   {roundLabel}
                 </Text>
                 <Space direction="vertical" style={{ width: '100%' }}>
