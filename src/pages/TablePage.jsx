@@ -1,4 +1,4 @@
-import { Card, Typography } from 'antd';
+import { Card, Input, Typography } from 'antd';
 import { useTournament } from './TournamentLayout';
 import WinnerCards from '../components/WinnerCards';
 import BracketChart from '../components/BracketChart';
@@ -8,7 +8,7 @@ const { Text, Title } = Typography;
 export default function TablePage() {
   const {
     tournament, matches, teamLookup, standings, groupStandings, finalMatch,
-    handleOpenMatch,
+    handleOpenMatch, update,
     handleWinnerPhoto, handleRunnerUpPhoto,
     handleShareChampion, handleShareRunnerUp,
   } = useTournament();
@@ -36,6 +36,27 @@ export default function TablePage() {
         onShareChampion={handleShareChampion}
         onShareRunnerUp={handleShareRunnerUp}
       />
+
+      {champion && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 4, alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: '#64748b', fontWeight: 700, flexShrink: 0 }}>💰 Prize</span>
+          <Input
+            placeholder="e.g. ₹5000"
+            size="small"
+            value={tournament.prizeMoney || ''}
+            onChange={(e) => update((t) => ({ ...t, prizeMoney: e.target.value }))}
+            style={{ flex: 1 }}
+          />
+          <span style={{ fontSize: 12, color: '#64748b', fontWeight: 700, flexShrink: 0 }}>🥈 Runner-up</span>
+          <Input
+            placeholder="e.g. ₹2000"
+            size="small"
+            value={tournament.runnerUpPrize || ''}
+            onChange={(e) => update((t) => ({ ...t, runnerUpPrize: e.target.value }))}
+            style={{ flex: 1 }}
+          />
+        </div>
+      )}
 
       <Card
         styles={{ body: { padding: '14px 16px' } }}
